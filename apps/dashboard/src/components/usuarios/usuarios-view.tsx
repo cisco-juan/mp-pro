@@ -25,11 +25,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import type { RolFormValues, UsuarioFormValues } from '@/lib/mock-data';
 import {
   emptyRolFormValues,
   emptyUsuarioFormValues,
   useUsuariosStore,
+  type RolFormValues,
+  type UsuarioFormValues,
 } from '@/lib/usuarios/usuarios-store';
 import { UsuariosGrid } from './usuarios-grid';
 import { UsuariosTable } from './usuarios-table';
@@ -52,7 +53,7 @@ export function UsuariosView() {
         !q ||
         usuario.nombre.toLowerCase().includes(q) ||
         usuario.email.toLowerCase().includes(q) ||
-        usuario.telefono.includes(q);
+        (usuario.telefono ?? '').includes(q);
 
       const matchesActivo =
         filtroActivo === 'todos' ||
@@ -69,10 +70,11 @@ export function UsuariosView() {
     resetKey,
   });
 
-  function handleCreateUsuario() {
-    const usuario = createUsuario({
+  async function handleCreateUsuario() {
+    const usuario = await createUsuario({
       ...usuarioForm,
       rolId: usuarioForm.rolId || roles[0]?.id || '',
+      password: usuarioForm.password || 'TempPass123!',
     });
     if (!usuario) {
       toast.error('No se pudo crear el usuario');
@@ -83,8 +85,8 @@ export function UsuariosView() {
     setOpenUsuario(false);
   }
 
-  function handleCreateRol() {
-    const rol = createRol(rolForm);
+  async function handleCreateRol() {
+    const rol = await createRol(rolForm);
     if (!rol) {
       toast.error('No se pudo crear el rol');
       return;
@@ -176,6 +178,18 @@ export function UsuariosView() {
                       placeholder="usuario@mppro.local"
                       value={usuarioForm.email}
                       onChange={(e) => setUsuarioForm((f) => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="password">Contraseña temporal</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Mínimo 8 caracteres"
+                      value={usuarioForm.password ?? ''}
+                      onChange={(e) =>
+                        setUsuarioForm((f) => ({ ...f, password: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="flex flex-col gap-2">

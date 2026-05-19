@@ -7,10 +7,53 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Placeholder fase 1 — reemplazar con modelos de dominio en fases siguientes.
+/// Placeholder fase 1 — health check del API.
 model HealthCheck {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("health_checks")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String   @default("")
+  permisos    String[]
+  users       User[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model User {
+  id                String         @id @default(cuid())
+  nombre            String
+  email             String         @unique
+  telefono          String?
+  passwordHash      String         @map("password_hash")
+  activo            Boolean        @default(true)
+  ordenesActivas    Int            @default(0) @map("ordenes_activas")
+  passwordChangedAt DateTime?      @map("password_changed_at")
+  roleId            String         @map("role_id")
+  role              Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  refreshTokens     RefreshToken[]
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  @@index([roleId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique @map("token_hash")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

@@ -2,19 +2,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Loader2, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ApiError } from '@/lib/api/client';
+import { useAuth } from '@/lib/auth/auth-store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@mppro.local');
+  const [password, setPassword] = useState('Admin123!');
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -27,9 +28,17 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    router.push('/');
+    try {
+      await login(email.trim(), password);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('No se pudo iniciar sesión. Comprueba que el API esté en ejecución.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -120,6 +129,9 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              Demo: admin@mppro.local / Admin123!
+            </p>
           </CardContent>
         </Card>
       </div>

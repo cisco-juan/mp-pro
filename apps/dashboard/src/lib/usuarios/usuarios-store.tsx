@@ -4,74 +4,20 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import {
-  roles as initialRoles,
-  usuarios as initialUsuarios,
-  type Rol,
-  type RolFormValues,
-  type Usuario,
-  type UsuarioFormValues,
-} from '@/lib/mock-data';
-
-type State = {
-  usuarios: Usuario[];
-  roles: Rol[];
-};
-
-type Action =
-  | { type: 'ADD_USUARIO'; usuario: Usuario }
-  | { type: 'UPDATE_USUARIO'; id: string; data: Partial<Usuario> }
-  | { type: 'TOGGLE_USUARIO'; id: string }
-  | { type: 'ADD_ROL'; rol: Rol };
-
-function generateUsuarioId(existing: { id: string }[]): string {
-  let n = existing.length + 1;
-  let id = `u${n}`;
-  while (existing.some((item) => item.id === id)) {
-    n += 1;
-    id = `u${n}`;
-  }
-  return id;
-}
-
-function generateRolId(existing: { id: string }[]): string {
-  let n = existing.length + 1;
-  let id = `r${n}`;
-  while (existing.some((item) => item.id === id)) {
-    n += 1;
-    id = `r${n}`;
-  }
-  return id;
-}
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'ADD_USUARIO':
-      return { ...state, usuarios: [...state.usuarios, action.usuario] };
-    case 'UPDATE_USUARIO':
-      return {
-        ...state,
-        usuarios: state.usuarios.map((u) =>
-          u.id === action.id ? { ...u, ...action.data } : u
-        ),
-      };
-    case 'TOGGLE_USUARIO':
-      return {
-        ...state,
-        usuarios: state.usuarios.map((u) =>
-          u.id === action.id ? { ...u, activo: !u.activo } : u
-        ),
-      };
-    case 'ADD_ROL':
-      return { ...state, roles: [...state.roles, action.rol] };
-    default:
-      return state;
-  }
-}
+  createRolApi,
+  createUsuarioApi,
+  fetchRoles,
+  fetchUsuarios,
+  toggleUsuarioActivoApi,
+} from '@/lib/api/usuarios-api';
+import type { Rol, RolFormValues, Usuario, UsuarioFormValues } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/auth-store';
 
 export const MECANICO_ROL_ID = 'r2';
 
@@ -80,6 +26,7 @@ export const emptyUsuarioFormValues: UsuarioFormValues = {
   email: '',
   telefono: '',
   rolId: '',
+  password: '',
 };
 
 export const emptyRolFormValues: RolFormValues = {
@@ -90,100 +37,126 @@ export const emptyRolFormValues: RolFormValues = {
 export type UsuariosContextValue = {
   usuarios: Usuario[];
   roles: Rol[];
+  loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
   getUsuario: (id: string) => Usuario | undefined;
   getRol: (id: string) => Rol | undefined;
   getRolNombre: (rolId: string) => string;
   getUsuariosByRolId: (rolId: string) => Usuario[];
   getUsuariosMecanicos: () => Usuario[];
-  createUsuario: (values: UsuarioFormValues) => Usuario | null;
-  toggleUsuarioActivo: (id: string) => boolean;
-  createRol: (values: RolFormValues) => Rol | null;
+  createUsuario: (values: UsuarioFormValues) => Promise<Usuario | null>;
+  toggleUsuarioActivo: (id: string) => Promise<boolean>;
+  createRol: (values: RolFormValues) => Promise<Rol | null>;
 };
 
 const UsuariosContext = createContext<UsuariosContextValue | null>(null);
 
 export function UsuariosProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, {
-    usuarios: initialUsuarios,
-    roles: initialRoles,
-  });
+  const { isAuthenticated } = useAuth();
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) {
+      setUsuarios([]);
+      setRoles([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const [usersData, rolesData] = await Promise.all([
+        fetchUsuarios(),
+        fetchRoles(),
+      ]);
+      setUsuarios(usersData);
+      setRoles(rolesData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar usuarios');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   const getUsuario = useCallback(
-    (id: string) => state.usuarios.find((u) => u.id === id),
-    [state.usuarios]
+    (id: string) => usuarios.find((u) => u.id === id),
+    [usuarios],
   );
 
   const getRol = useCallback(
-    (id: string) => state.roles.find((r) => r.id === id),
-    [state.roles]
+    (id: string) => roles.find((r) => r.id === id),
+    [roles],
   );
 
   const getRolNombre = useCallback(
-    (rolId: string) => state.roles.find((r) => r.id === rolId)?.nombre ?? 'Sin rol',
-    [state.roles]
+    (rolId: string) => roles.find((r) => r.id === rolId)?.nombre ?? 'Sin rol',
+    [roles],
   );
 
   const getUsuariosByRolId = useCallback(
-    (rolId: string) => state.usuarios.filter((u) => u.rolId === rolId),
-    [state.usuarios]
+    (rolId: string) => usuarios.filter((u) => u.rolId === rolId),
+    [usuarios],
   );
 
   const getUsuariosMecanicos = useCallback(
-    () =>
-      state.usuarios.filter((u) => u.rolId === MECANICO_ROL_ID && u.activo),
-    [state.usuarios]
+    () => usuarios.filter((u) => u.rolId === MECANICO_ROL_ID && u.activo),
+    [usuarios],
   );
 
   const createUsuario = useCallback(
-    (values: UsuarioFormValues): Usuario | null => {
-      const email = values.email.trim().toLowerCase();
-      if (!values.nombre.trim() || !email || !values.rolId) return null;
-      if (state.usuarios.some((u) => u.email.toLowerCase() === email)) return null;
-
-      const usuario: Usuario = {
-        id: generateUsuarioId(state.usuarios),
-        nombre: values.nombre.trim(),
-        email,
-        telefono: values.telefono.trim() || '+34 600 000 000',
-        rolId: values.rolId,
-        activo: true,
-        ordenesActivas: 0,
-      };
-      dispatch({ type: 'ADD_USUARIO', usuario });
-      return usuario;
+    async (values: UsuarioFormValues): Promise<Usuario | null> => {
+      try {
+        const usuario = await createUsuarioApi(values);
+        setUsuarios((prev) => [...prev, usuario]);
+        return usuario;
+      } catch {
+        return null;
+      }
     },
-    [state.usuarios]
+    [],
   );
 
-  const toggleUsuarioActivo = useCallback(
-    (id: string): boolean => {
-      if (!state.usuarios.some((u) => u.id === id)) return false;
-      dispatch({ type: 'TOGGLE_USUARIO', id });
+  const toggleUsuarioActivo = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const updated = await toggleUsuarioActivoApi(id);
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, activo: updated.activo } : u)),
+      );
       return true;
-    },
-    [state.usuarios]
-  );
+    } catch {
+      return false;
+    }
+  }, []);
 
   const createRol = useCallback(
-    (values: RolFormValues): Rol | null => {
-      if (!values.nombre.trim()) return null;
-
-      const rol: Rol = {
-        id: generateRolId(state.roles),
-        nombre: values.nombre.trim(),
-        descripcion: values.descripcion.trim() || 'Rol personalizado',
-        permisos: ['taller:read'],
-      };
-      dispatch({ type: 'ADD_ROL', rol });
-      return rol;
+    async (values: RolFormValues): Promise<Rol | null> => {
+      try {
+        const rol = await createRolApi(values);
+        setRoles((prev) => [...prev, rol]);
+        return rol;
+      } catch {
+        return null;
+      }
     },
-    [state.roles]
+    [],
   );
 
   const value = useMemo(
     () => ({
-      usuarios: state.usuarios,
-      roles: state.roles,
+      usuarios,
+      roles,
+      loading,
+      error,
+      reload,
       getUsuario,
       getRol,
       getRolNombre,
@@ -194,8 +167,11 @@ export function UsuariosProvider({ children }: { children: ReactNode }) {
       createRol,
     }),
     [
-      state.usuarios,
-      state.roles,
+      usuarios,
+      roles,
+      loading,
+      error,
+      reload,
       getUsuario,
       getRol,
       getRolNombre,
@@ -204,7 +180,7 @@ export function UsuariosProvider({ children }: { children: ReactNode }) {
       createUsuario,
       toggleUsuarioActivo,
       createRol,
-    ]
+    ],
   );
 
   return (
@@ -219,3 +195,6 @@ export function useUsuariosStore() {
   }
   return ctx;
 }
+
+// Re-export types for components that import from mock-data
+export type { Rol, RolFormValues, Usuario, UsuarioFormValues };

@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ActivoBadge } from '@/components/shared/status-badge';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Usuario } from '@/lib/mock-data';
+import type { Usuario } from '@/lib/usuarios/usuarios-store';
 import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 
 function getInitials(name: string) {

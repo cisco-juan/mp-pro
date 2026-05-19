@@ -1,6 +1,7 @@
 import { Fira_Code, Fira_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { AuthProvider } from '@/lib/auth/auth-store';
 import './global.css';
 
 const firaSans = Fira_Sans({
@@ -32,8 +33,10 @@ export default function RootLayout({
     <html lang="es" className={`${firaSans.variable} ${firaCode.variable}`}>
       <body className="min-h-dvh font-sans">
         <TooltipProvider>
-          {children}
-          <Toaster position="top-right" richColors />
+          <AuthProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </AuthProvider>
         </TooltipProvider>
       </body>
     </html>

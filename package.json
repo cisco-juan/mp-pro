@@ -8,7 +8,9 @@
     "dev:app": "nx start app",
     "db:up": "docker compose up -d",
     "db:migrate": "nx run database:prisma-migrate",
-    "verify": "nx run-many -t lint,typecheck,build -p api,dashboard,ui-shared,utils-shared,database && nx run app:typecheck"
+    "verify": "nx run-many -t lint,typecheck,build -p api,dashboard,ui-shared,utils-shared,database && nx run app:typecheck",
+    "test:api": "nx run api:test",
+    "test:api-e2e": "nx run api-e2e:e2e"
   },
   "private": true,
   "devDependencies": {
