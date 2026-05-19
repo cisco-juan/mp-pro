@@ -40,17 +40,19 @@ import {
 import { VehiculoEditSheet } from '@/components/vehiculos/vehiculo-edit-sheet';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { useCitasStore } from '@/lib/citas/citas-store';
+import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
+import { useTallerStore } from '@/lib/taller/taller-store';
 import {
   citaEstadoLabels,
   getGarantiasByVehiculoId,
   getOrdenComercialEstadoLabel,
-  getOrdenesComercialesByVehiculoId,
-  getOrdenesTrabajoByVehiculoId,
-  getPiezasUsadasByVehiculoId,
+  getPiezaNombre,
   getServicioNombre,
   ordenComercialTipoLabels,
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
+  type OrdenTrabajo,
+  type PiezaUsadaVehiculo,
   type Vehiculo,
   type VehiculoFormValues,
 } from '@/lib/mock-data';
@@ -94,12 +96,24 @@ function VehiculoDetalleContent({
 }) {
   const cliente = getCliente(vehiculo.clienteId);
   const { getCitasByVehiculo } = useCitasStore();
+  const { getOrdenesByVehiculo } = useTallerStore();
+  const { ordenesComerciales: todasOrdenesComerciales } = useOrdenesComercialesStore();
   const citas = getCitasByVehiculo(id);
-  const ordenesTrabajo = getOrdenesTrabajoByVehiculoId(id);
+  const ordenesTrabajo = getOrdenesByVehiculo(id);
   const mantenimientos = ordenesTrabajo.filter((o) => o.tipo === 'mantenimiento');
   const reparaciones = ordenesTrabajo.filter((o) => o.tipo === 'reparacion');
-  const piezasUsadas = getPiezasUsadasByVehiculoId(id);
-  const ordenesComerciales = getOrdenesComercialesByVehiculoId(id);
+  const piezasUsadas: PiezaUsadaVehiculo[] = ordenesTrabajo.flatMap((orden) =>
+    orden.piezasUsadas.map((pu) => ({
+      piezaId: pu.piezaId,
+      piezaNombre: getPiezaNombre(pu.piezaId),
+      cantidad: pu.cantidad,
+      precioUnitario: pu.precioUnitario,
+      ordenTrabajoId: orden.id,
+      ordenNumero: orden.numero,
+      fechaEntrada: orden.fechaEntrada,
+    }))
+  );
+  const ordenesComerciales = todasOrdenesComerciales.filter((o) => o.vehiculoId === id);
   const garantiasVehiculo = getGarantiasByVehiculoId(id);
   const garantiasVigentes = garantiasVehiculo.filter((g) => g.estado === 'vigente');
 
@@ -418,7 +432,7 @@ function OrdenTrabajoList({
   items,
   emptyMessage,
 }: {
-  items: ReturnType<typeof getOrdenesTrabajoByVehiculoId>;
+  items: OrdenTrabajo[];
   emptyMessage: string;
 }) {
   return (

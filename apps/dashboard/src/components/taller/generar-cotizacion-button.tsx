@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import {
-  getOrdenComercialById,
-  getOrdenComercialByOrdenTrabajoId,
-} from '@/lib/mock-data';
+import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
+import { useTallerStore } from '@/lib/taller/taller-store';
 
 interface GenerarCotizacionButtonProps {
   ordenTrabajoId: string;
@@ -18,15 +17,25 @@ export function GenerarCotizacionButton({
   ordenTrabajoId,
   ordenComercialId,
 }: GenerarCotizacionButtonProps) {
+  const router = useRouter();
+  const { getOrdenTrabajo, linkOrdenComercial } = useTallerStore();
+  const { getOrdenComercial, getOrdenComercialByOrdenTrabajoId, createCotizacionFromOrdenTrabajo } =
+    useOrdenesComercialesStore();
+
   const existente =
-    ordenComercialId
-      ? getOrdenComercialById(ordenComercialId)
-      : getOrdenComercialByOrdenTrabajoId(ordenTrabajoId);
+    (ordenComercialId ? getOrdenComercial(ordenComercialId) : undefined) ??
+    getOrdenComercialByOrdenTrabajoId(ordenTrabajoId);
 
   function handleGenerar() {
+    const orden = getOrdenTrabajo(ordenTrabajoId);
+    if (!orden) return;
+
+    const cotizacion = createCotizacionFromOrdenTrabajo(orden);
+    linkOrdenComercial(ordenTrabajoId, cotizacion.id);
     toast.success('Cotización generada (maquetación)', {
-      description: 'En producción se creará una orden comercial vinculada a esta OT.',
+      description: `Se ha creado ${cotizacion.numero} en borrador.`,
     });
+    router.push(`/ordenes/${cotizacion.id}`);
   }
 
   if (existente) {

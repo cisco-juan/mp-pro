@@ -52,7 +52,6 @@ import {
   documentoTipoLabels,
   getOrdenComercialById,
   getOrdenesComercialesByClienteId,
-  getOrdenesTrabajoByClienteId,
   getPagosByClienteId,
   getServicioNombre,
   citaEstadoLabels,
@@ -64,6 +63,7 @@ import {
   type ClienteFormValues,
 } from '@/lib/mock-data';
 import { useCitasStore } from '@/lib/citas/citas-store';
+import { useTallerStore } from '@/lib/taller/taller-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 interface ClienteDetalleViewProps {
@@ -109,10 +109,11 @@ function ClienteDetalleContent({
   const [openDeactivate, setOpenDeactivate] = useState(false);
 
   const { getCitasByCliente } = useCitasStore();
+  const { getOrdenesByCliente } = useTallerStore();
 
   const vehiculosCliente = getVehiculosByCliente(id);
   const citasCliente = getCitasByCliente(id);
-  const ordenesTrabajoCliente = getOrdenesTrabajoByClienteId(id);
+  const ordenesTrabajoCliente = getOrdenesByCliente(id);
   const ordenesComercialesCliente = getOrdenesComercialesByClienteId(id);
   const pagosCliente = getPagosByClienteId(id);
 

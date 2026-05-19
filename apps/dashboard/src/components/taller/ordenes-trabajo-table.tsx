@@ -28,7 +28,6 @@ import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
 import {
-  ordenesTrabajo,
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   getClienteNombre,
@@ -37,9 +36,11 @@ import {
   type OrdenTrabajoTipo,
 } from '@/lib/mock-data';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useTallerStore } from '@/lib/taller/taller-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function OrdenesTrabajoTable() {
+  const { ordenesTrabajo } = useTallerStore();
   const { getVehiculoLabel } = useClientesStore();
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
@@ -60,7 +61,7 @@ export function OrdenesTrabajoTable() {
 
       return matchesSearch && matchesEstado && matchesTipo;
     });
-  }, [search, filtroEstado, filtroTipo]);
+  }, [search, filtroEstado, filtroTipo, ordenesTrabajo, getVehiculoLabel]);
 
   const resetKey = `${search}-${filtroEstado}-${filtroTipo}`;
   const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({

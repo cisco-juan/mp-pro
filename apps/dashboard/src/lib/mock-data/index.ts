@@ -349,6 +349,119 @@ export interface OrdenTrabajo {
   timeline: { fecha: string; estado: OrdenEstado; nota: string }[];
 }
 
+export interface OrdenTrabajoFormValues {
+  clienteId: string;
+  vehiculoId: string;
+  usuarioId: string;
+  tipo: OrdenTrabajoTipo;
+  descripcion: string;
+  fechaEntrada: string;
+  fechaEstimada: string;
+}
+
+export const emptyOrdenTrabajoFormValues: OrdenTrabajoFormValues = {
+  clienteId: '',
+  vehiculoId: '',
+  usuarioId: '',
+  tipo: 'reparacion',
+  descripcion: '',
+  fechaEntrada: '',
+  fechaEstimada: '',
+};
+
+export const MECANICO_ROL_ID = 'r2';
+
+export const ordenTrabajoChecklistTemplates: Record<OrdenTrabajoTipo, string[]> = {
+  mantenimiento: [
+    'Confirmar piezas en stock',
+    'Reservar bahía',
+    'Cambio aceite',
+    'Filtros',
+    'Revisión general',
+    'Prueba en banco',
+  ],
+  reparacion: [
+    'Diagnóstico inicial',
+    'Desmontaje',
+    'Sustitución / reparación',
+    'Montaje',
+    'Prueba en banco',
+  ],
+};
+
+export function ordenTrabajoToFormValues(orden: OrdenTrabajo): OrdenTrabajoFormValues {
+  return {
+    clienteId: orden.clienteId,
+    vehiculoId: orden.vehiculoId,
+    usuarioId: orden.usuarioId,
+    tipo: orden.tipo,
+    descripcion: orden.descripcion,
+    fechaEntrada: orden.fechaEntrada,
+    fechaEstimada: orden.fechaEstimada,
+  };
+}
+
+export function formValuesToOrdenTrabajoData(
+  values: OrdenTrabajoFormValues
+): Omit<
+  OrdenTrabajo,
+  'id' | 'numero' | 'estado' | 'totalEstimado' | 'piezasUsadas' | 'checklist' | 'timeline' | 'ordenComercialId'
+> {
+  return {
+    clienteId: values.clienteId,
+    vehiculoId: values.vehiculoId,
+    usuarioId: values.usuarioId,
+    tipo: values.tipo,
+    descripcion: values.descripcion.trim(),
+    fechaEntrada: values.fechaEntrada,
+    fechaEstimada: values.fechaEstimada,
+  };
+}
+
+export function generateOrdenTrabajoId(existing: { id: string }[]): string {
+  let n = existing.length + 1;
+  let id = `o${n}`;
+  while (existing.some((item) => item.id === id)) {
+    n += 1;
+    id = `o${n}`;
+  }
+  return id;
+}
+
+export function generateOrdenTrabajoNumero(existing: { numero: string }[]): string {
+  const year = new Date(MOCK_TODAY).getFullYear();
+  const prefix = `OT-${year}-`;
+  const nums = existing
+    .map((o) => {
+      const match = o.numero.match(new RegExp(`^${prefix}(\\d+)$`));
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter((n) => n > 0);
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 142;
+  return `${prefix}${String(next).padStart(4, '0')}`;
+}
+
+export function buildTimelineEntry(
+  estado: OrdenEstado,
+  nota: string
+): { fecha: string; estado: OrdenEstado; nota: string } {
+  const now = new Date();
+  const fecha = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return { fecha, estado, nota };
+}
+
+export function buildChecklistFromTemplate(tipo: OrdenTrabajoTipo): { item: string; completado: boolean }[] {
+  return ordenTrabajoChecklistTemplates[tipo].map((item) => ({ item, completado: false }));
+}
+
+export function computeTotalPiezas(piezasUsadas: PiezaUsada[]): number {
+  return piezasUsadas.reduce((sum, p) => sum + p.cantidad * p.precioUnitario, 0);
+}
+
+export function getUsuariosMecanicos(): Usuario[] {
+  return usuarios.filter((u) => u.rolId === MECANICO_ROL_ID && u.activo);
+}
+
 export interface Pieza {
   id: string;
   codigo: string;
