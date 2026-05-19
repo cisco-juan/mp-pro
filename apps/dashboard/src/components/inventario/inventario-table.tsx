@@ -34,12 +34,26 @@ import { StockBadge } from '@/components/shared/status-badge';
 import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { piezas, piezaCategorias } from '@/lib/mock-data';
+import {
+  emptyPiezaFormValues,
+  useInventarioStore,
+} from '@/lib/inventario/inventario-store';
+import type { PiezaFormValues } from '@/lib/mock-data';
+import { piezaCategorias as defaultCategorias } from '@/lib/mock-data';
 
 export function InventarioTable() {
+  const { piezas, categorias, createPieza, adjustStock } = useInventarioStore();
   const [search, setSearch] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<PiezaFormValues>(emptyPiezaFormValues);
+  const [stockTarget, setStockTarget] = useState<{ id: string; nombre: string } | null>(null);
+  const [stockDelta, setStockDelta] = useState('1');
+
+  const allCategorias = useMemo(() => {
+    const merged = new Set([...defaultCategorias, ...categorias]);
+    return [...merged].sort();
+  }, [categorias]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -54,7 +68,7 @@ export function InventarioTable() {
 
       return matchesSearch && matchesCategoria;
     });
-  }, [search, filtroCategoria]);
+  }, [piezas, search, filtroCategoria]);
 
   const resetKey = `${search}-${filtroCategoria}`;
   const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
@@ -63,8 +77,32 @@ export function InventarioTable() {
   });
 
   function handleCreate() {
-    toast.success('Pieza registrada (maquetación)');
+    const pieza = createPieza(form);
+    if (!pieza) {
+      toast.error('No se pudo registrar la pieza', {
+        description: 'Revisa los campos obligatorios y que el código no exista.',
+      });
+      return;
+    }
+    toast.success('Pieza registrada', { description: pieza.nombre });
+    setForm(emptyPiezaFormValues);
     setOpen(false);
+  }
+
+  function handleAdjustStock() {
+    if (!stockTarget) return;
+    const delta = parseInt(stockDelta, 10);
+    if (!delta) {
+      toast.error('Indica una cantidad válida');
+      return;
+    }
+    if (!adjustStock(stockTarget.id, delta)) {
+      toast.error('No se pudo ajustar el stock');
+      return;
+    }
+    toast.success('Stock actualizado');
+    setStockTarget(null);
+    setStockDelta('1');
   }
 
   return (
@@ -87,7 +125,7 @@ export function InventarioTable() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todas las categorías</SelectItem>
-              {piezaCategorias.map((cat) => (
+              {allCategorias.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
                 </SelectItem>
@@ -109,20 +147,79 @@ export function InventarioTable() {
               <div className="flex flex-col gap-4 py-2">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="codigo">Código</Label>
-                  <Input id="codigo" placeholder="FLT-OIL-001" />
+                  <Input
+                    id="codigo"
+                    placeholder="FLT-OIL-001"
+                    value={form.codigo}
+                    onChange={(e) => setForm((f) => ({ ...f, codigo: e.target.value }))}
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="nombre">Nombre</Label>
-                  <Input id="nombre" placeholder="Nombre de la pieza" />
+                  <Input
+                    id="nombre"
+                    placeholder="Nombre de la pieza"
+                    value={form.nombre}
+                    onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
+                    <Label htmlFor="categoria">Categoría</Label>
+                    <Input
+                      id="categoria"
+                      placeholder="Filtros"
+                      list="categorias-pieza"
+                      value={form.categoria}
+                      onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+                    />
+                    <datalist id="categorias-pieza">
+                      {allCategorias.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="ubicacion">Ubicación</Label>
+                    <Input
+                      id="ubicacion"
+                      placeholder="A-01"
+                      value={form.ubicacion}
+                      onChange={(e) => setForm((f) => ({ ...f, ubicacion: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="stock">Stock</Label>
-                    <Input id="stock" type="number" defaultValue="0" />
+                    <Input
+                      id="stock"
+                      type="number"
+                      min={0}
+                      value={form.stock}
+                      onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="stockMinimo">Mínimo</Label>
+                    <Input
+                      id="stockMinimo"
+                      type="number"
+                      min={0}
+                      value={form.stockMinimo}
+                      onChange={(e) => setForm((f) => ({ ...f, stockMinimo: e.target.value }))}
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="precio">Precio (€)</Label>
-                    <Input id="precio" type="number" step="0.01" />
+                    <Input
+                      id="precio"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={form.precioUnitario}
+                      onChange={(e) => setForm((f) => ({ ...f, precioUnitario: e.target.value }))}
+                    />
                   </div>
                 </div>
               </div>
@@ -154,12 +251,13 @@ export function InventarioTable() {
               <TableHead>Estado</TableHead>
               <TableHead>Ubicación</TableHead>
               <TableHead className="text-right">Precio</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No se encontraron piezas
                 </TableCell>
               </TableRow>
@@ -184,6 +282,15 @@ export function InventarioTable() {
                     <TableCell className="text-right font-mono">
                       {pieza.precioUnitario.toLocaleString('es-ES')} €
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setStockTarget({ id: pieza.id, nombre: pieza.nombre })}
+                      >
+                        Ajustar stock
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -191,6 +298,32 @@ export function InventarioTable() {
           </TableBody>
         </Table>
       </DataTableShell>
+
+      <Dialog open={Boolean(stockTarget)} onOpenChange={(o) => !o && setStockTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajustar stock</DialogTitle>
+            <DialogDescription>
+              {stockTarget?.nombre} — valor positivo para entrada, negativo para salida.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            <Label htmlFor="delta">Cantidad (+ / −)</Label>
+            <Input
+              id="delta"
+              type="number"
+              value={stockDelta}
+              onChange={(e) => setStockDelta(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStockTarget(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAdjustStock}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

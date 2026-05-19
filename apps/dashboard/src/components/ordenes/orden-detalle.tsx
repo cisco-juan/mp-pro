@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,27 +21,65 @@ import {
   getClienteNombre,
   getOrdenComercialEstadoLabel,
   getOrdenTrabajoById,
-  getTotalPagado,
   ordenComercialTipoLabels,
   type OrdenComercial,
 } from '@/lib/mock-data';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 interface OrdenDetalleProps {
   orden: OrdenComercial;
 }
 
-export function OrdenDetalle({ orden }: OrdenDetalleProps) {
+export function OrdenDetalle({ orden: ordenProp }: OrdenDetalleProps) {
+  const router = useRouter();
   const { getVehiculoLabel } = useClientesStore();
+  const {
+    getOrdenComercial,
+    getTotalPagado,
+    updateCotizacionEstado,
+    updateFacturaEstado,
+    convertCotizacionToFactura,
+  } = useOrdenesComercialesStore();
+
+  const orden = getOrdenComercial(ordenProp.id) ?? ordenProp;
   const ot = orden.ordenTrabajoId ? getOrdenTrabajoById(orden.ordenTrabajoId) : undefined;
   const totalPagado = getTotalPagado(orden.id);
   const pendiente = orden.total - totalPagado;
 
-  function handleAccion(accion: string) {
-    toast.success(`${accion} (maquetación)`, {
-      description: `Acción simulada sobre ${orden.numero}`,
-    });
+  function handleEnviarCotizacion() {
+    if (updateCotizacionEstado(orden.id, 'enviada')) {
+      toast.success('Cotización enviada', { description: orden.numero });
+    }
+  }
+
+  function handleAceptarCotizacion() {
+    if (updateCotizacionEstado(orden.id, 'aceptada')) {
+      toast.success('Cotización aceptada');
+    }
+  }
+
+  function handleRechazarCotizacion() {
+    if (updateCotizacionEstado(orden.id, 'rechazada')) {
+      toast.success('Cotización rechazada');
+    }
+  }
+
+  function handleConvertirFactura() {
+    const factura = convertCotizacionToFactura(orden.id);
+    if (!factura) {
+      toast.error('No se pudo convertir la cotización');
+      return;
+    }
+    toast.success('Factura creada en borrador', { description: factura.numero });
+    router.push(`/ordenes/${factura.id}`);
+  }
+
+  function handleEmitirFactura() {
+    if (updateFacturaEstado(orden.id, 'emitida')) {
+      toast.success('Factura emitida', { description: orden.numero });
+    }
   }
 
   return (
@@ -161,23 +200,33 @@ export function OrdenDetalle({ orden }: OrdenDetalleProps) {
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {orden.tipo === 'cotizacion' && orden.estado === 'borrador' && (
-              <Button onClick={() => handleAccion('Cotización enviada')} className="min-h-10">
+              <Button onClick={handleEnviarCotizacion} className="min-h-10">
                 Enviar cotización
               </Button>
             )}
+            {orden.tipo === 'cotizacion' && orden.estado === 'enviada' && (
+              <>
+                <Button onClick={handleAceptarCotizacion} className="min-h-10">
+                  Marcar como aceptada
+                </Button>
+                <Button variant="outline" onClick={handleRechazarCotizacion} className="min-h-10">
+                  Rechazar
+                </Button>
+              </>
+            )}
             {orden.tipo === 'cotizacion' && orden.estado === 'aceptada' && (
-              <Button onClick={() => handleAccion('Convertida a factura')} className="min-h-10">
+              <Button onClick={handleConvertirFactura} className="min-h-10">
                 Convertir a factura
               </Button>
             )}
             {orden.tipo === 'factura' && orden.estado === 'borrador' && (
-              <Button onClick={() => handleAccion('Factura emitida')} className="min-h-10">
+              <Button onClick={handleEmitirFactura} className="min-h-10">
                 Emitir factura
               </Button>
             )}
             {orden.tipo === 'factura' && orden.estado === 'emitida' && pendiente > 0 && (
-              <Button onClick={() => handleAccion('Pago registrado')} className="min-h-10" asChild>
-                <Link href="/pagos">Registrar pago</Link>
+              <Button className="min-h-10" asChild>
+                <Link href={`/pagos?factura=${orden.id}`}>Registrar pago</Link>
               </Button>
             )}
           </CardContent>

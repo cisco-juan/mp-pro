@@ -473,6 +473,16 @@ export interface Pieza {
   ubicacion?: string;
 }
 
+export interface PiezaFormValues {
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  stock: string;
+  stockMinimo: string;
+  precioUnitario: string;
+  ubicacion: string;
+}
+
 export interface Servicio {
   id: string;
   nombre: string;
@@ -481,6 +491,14 @@ export interface Servicio {
   duracionMin: number;
   categoria: string;
   activo: boolean;
+}
+
+export interface ServicioFormValues {
+  nombre: string;
+  descripcion: string;
+  precio: string;
+  duracionMin: string;
+  categoria: string;
 }
 
 export interface LineaOrden {
@@ -519,11 +537,24 @@ export interface Pago {
   notas?: string;
 }
 
+export interface PagoFormValues {
+  ordenComercialId: string;
+  monto: string;
+  metodo: PagoMetodo;
+  referencia: string;
+  notas: string;
+}
+
 export interface Rol {
   id: string;
   nombre: string;
   descripcion: string;
   permisos: string[];
+}
+
+export interface RolFormValues {
+  nombre: string;
+  descripcion: string;
 }
 
 export interface Usuario {
@@ -535,6 +566,43 @@ export interface Usuario {
   activo: boolean;
   ordenesActivas: number;
 }
+
+export interface UsuarioFormValues {
+  nombre: string;
+  email: string;
+  telefono: string;
+  rolId: string;
+}
+
+export interface ConfiguracionTaller {
+  nombreTaller: string;
+  cif: string;
+  direccion: string;
+  horaApertura: string;
+  horaCierre: string;
+  bahias: number;
+  notifCitas: boolean;
+  notifOrdenes: boolean;
+  notifRecordatorios: boolean;
+  serieCotizacion: string;
+  serieFactura: string;
+  ivaPorcentaje: number;
+}
+
+export const defaultConfiguracionTaller: ConfiguracionTaller = {
+  nombreTaller: 'Taller MP Pro',
+  cif: 'B12345678',
+  direccion: 'Calle Industria 42, 28001 Madrid',
+  horaApertura: '08:00',
+  horaCierre: '19:00',
+  bahias: 6,
+  notifCitas: true,
+  notifOrdenes: true,
+  notifRecordatorios: true,
+  serieCotizacion: 'COT-2026',
+  serieFactura: 'FAC-2026',
+  ivaPorcentaje: 21,
+};
 
 export interface ActividadReciente {
   id: string;

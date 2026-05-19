@@ -1,17 +1,9 @@
 import Link from 'next/link';
-import {
-  Euro,
-  Package,
-  Wrench,
-  ArrowRight,
-  FileText,
-  Shield,
-} from 'lucide-react';
+import { ArrowRight, FileText, Package, Shield, Wrench } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppointmentsChart } from '@/components/dashboard/appointments-chart';
-import { CitasHoyStat } from '@/components/citas/citas-hoy-stat';
 import { ProximasCitasCard } from '@/components/citas/proximas-citas-card';
-import { StatCard } from '@/components/dashboard/stat-card';
+import { DashboardStats } from '@/components/dashboard/dashboard-stats';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { actividadReciente, dashboardStats } from '@/lib/mock-data';
+import { actividadReciente } from '@/lib/mock-data';
 
 export const metadata = {
   title: 'Dashboard',
@@ -44,29 +36,7 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <CitasHoyStat />
-        <StatCard
-          title="OTs abiertas"
-          value={String(dashboardStats.otsAbiertas)}
-          trend={dashboardStats.otsAbiertasTrend}
-          icon={Wrench}
-          trendPositive={false}
-        />
-        <StatCard
-          title="Stock bajo"
-          value={String(dashboardStats.piezasStockBajo)}
-          trend={`${dashboardStats.facturasPendientes} fact. pend.`}
-          icon={Package}
-          trendPositive={false}
-        />
-        <StatCard
-          title="Ingresos del mes"
-          value={`${dashboardStats.ingresosMes.toLocaleString('es-ES')} €`}
-          trend={dashboardStats.ingresosTrend}
-          icon={Euro}
-        />
-      </div>
+      <DashboardStats />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

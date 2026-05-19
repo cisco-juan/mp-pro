@@ -35,7 +35,7 @@ interface OrdenesTableProps {
 }
 
 export function OrdenesTable({ tipo }: OrdenesTableProps) {
-  const { ordenesComerciales } = useOrdenesComercialesStore();
+  const { ordenesComerciales, convertCotizacionToFactura } = useOrdenesComercialesStore();
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -56,8 +56,13 @@ export function OrdenesTable({ tipo }: OrdenesTableProps) {
   });
 
   function handleConvertir(orden: OrdenComercial) {
-    toast.success('Cotización convertida a factura (maquetación)', {
-      description: `${orden.numero} → factura pendiente de emisión`,
+    const factura = convertCotizacionToFactura(orden.id);
+    if (!factura) {
+      toast.error('No se pudo convertir la cotización');
+      return;
+    }
+    toast.success('Factura creada en borrador', {
+      description: `${orden.numero} → ${factura.numero}`,
     });
   }
 

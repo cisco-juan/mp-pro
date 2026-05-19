@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { piezas, getPiezaById, type PiezaUsada } from '@/lib/mock-data';
+import type { PiezaUsada } from '@/lib/mock-data';
+import { useInventarioStore } from '@/lib/inventario/inventario-store';
 
 interface AgregarPiezaDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function AgregarPiezaDialog({
   onAdd,
   piezasExistentes,
 }: AgregarPiezaDialogProps) {
+  const { piezas, getPieza, reservarStock } = useInventarioStore();
   const [piezaId, setPiezaId] = useState('');
   const [cantidad, setCantidad] = useState('1');
   const [error, setError] = useState('');
@@ -42,7 +44,7 @@ export function AgregarPiezaDialog({
     (p) => !piezasExistentes.some((pu) => pu.piezaId === p.id)
   );
 
-  const piezaSeleccionada = piezaId ? getPiezaById(piezaId) : undefined;
+  const piezaSeleccionada = piezaId ? getPieza(piezaId) : undefined;
 
   function handleClose() {
     setPiezaId('');
@@ -62,8 +64,12 @@ export function AgregarPiezaDialog({
       setError('Indica una cantidad válida');
       return;
     }
-    const pieza = getPiezaById(piezaId);
+    const pieza = getPieza(piezaId);
     if (!pieza) return;
+    if (pieza.stock < qty) {
+      setError(`Stock insuficiente (disponible: ${pieza.stock})`);
+      return;
+    }
 
     onAdd({
       piezaId: pieza.id,

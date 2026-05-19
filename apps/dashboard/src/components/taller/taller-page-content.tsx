@@ -25,7 +25,7 @@ export function TallerPageContent() {
 
   function handleCreate(values: OrdenTrabajoFormValues) {
     const orden = createOrdenTrabajo(values);
-    toast.success('Orden de trabajo creada (maquetación)');
+    toast.success('Orden de trabajo creada');
     setOpenCreate(false);
     router.push(`/taller/${orden.id}`);
   }

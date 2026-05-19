@@ -22,12 +22,12 @@ import {
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   getClienteNombre,
-  getUsuarioById,
   type OrdenEstado,
   type OrdenTrabajo,
 } from '@/lib/mock-data';
 import { useTallerStore } from '@/lib/taller/taller-store';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 import { formatDisplayDate } from '@org/utils-shared';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +64,8 @@ function OrdenKanbanCardContent({
   getVehiculoLabel: (id: string) => string;
   isDragging?: boolean;
 }) {
-  const mecanico = getUsuarioById(orden.usuarioId);
+  const { getUsuario } = useUsuariosStore();
+  const mecanico = orden.usuarioId ? getUsuario(orden.usuarioId) : undefined;
   const progress = getChecklistProgress(orden.checklist);
 
   return (
@@ -230,7 +231,7 @@ export function KanbanBoard() {
 
     const ok = updateOrdenEstado(ordenId, newEstado);
     if (ok) {
-      toast.success(`OT movida a ${ordenEstadoLabels[newEstado].toLowerCase()} (maquetación)`);
+      toast.success(`OT movida a ${ordenEstadoLabels[newEstado].toLowerCase()}`);
     }
   }
 
