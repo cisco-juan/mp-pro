@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { useInventarioStore } from '@/lib/inventario/inventario-store';
 import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
-import { useTallerStore } from '@/lib/taller/taller-store';
 
 interface GenerarCotizacionButtonProps {
   ordenTrabajoId: string;
@@ -19,8 +17,6 @@ export function GenerarCotizacionButton({
   ordenComercialId,
 }: GenerarCotizacionButtonProps) {
   const router = useRouter();
-  const { getOrdenTrabajo, linkOrdenComercial } = useTallerStore();
-  const { getPiezaNombre } = useInventarioStore();
   const { getOrdenComercial, getOrdenComercialByOrdenTrabajoId, createCotizacionFromOrdenTrabajo } =
     useOrdenesComercialesStore();
 
@@ -29,19 +25,15 @@ export function GenerarCotizacionButton({
     getOrdenComercialByOrdenTrabajoId(ordenTrabajoId);
 
   async function handleGenerar() {
-    const orden = getOrdenTrabajo(ordenTrabajoId);
-    if (!orden) return;
-
-    const cotizacion = createCotizacionFromOrdenTrabajo(orden, getPiezaNombre);
-    const linked = await linkOrdenComercial(ordenTrabajoId, cotizacion.id);
-    if (!linked) {
-      toast.error('No se pudo vincular la cotización con la orden');
-      return;
+    try {
+      const cotizacion = await createCotizacionFromOrdenTrabajo(ordenTrabajoId);
+      toast.success('Cotización generada', {
+        description: `Se ha creado ${cotizacion.numero} en borrador.`,
+      });
+      router.push(`/ordenes/${cotizacion.id}`);
+    } catch {
+      toast.error('No se pudo generar la cotización');
     }
-    toast.success('Cotización generada', {
-      description: `Se ha creado ${cotizacion.numero} en borrador.`,
-    });
-    router.push(`/ordenes/${cotizacion.id}`);
   }
 
   if (existente) {

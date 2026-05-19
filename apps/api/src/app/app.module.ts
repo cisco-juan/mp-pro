@@ -12,6 +12,11 @@ import { UsersModule } from '../users/users.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { WorkOrdersModule } from '../work-orders/work-orders.module';
+import { ServicesModule } from '../services/services.module';
+import { AppointmentsModule } from '../appointments/appointments.module';
+import { CommercialOrdersModule } from '../commercial-orders/commercial-orders.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { SettingsModule } from '../settings/settings.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -30,6 +35,11 @@ import { AppService } from './app.service';
     VehiclesModule,
     InventoryModule,
     WorkOrdersModule,
+    ServicesModule,
+    AppointmentsModule,
+    CommercialOrdersModule,
+    PaymentsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [

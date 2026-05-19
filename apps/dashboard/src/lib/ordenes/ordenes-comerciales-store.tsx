@@ -4,370 +4,218 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import {
-  ordenesComerciales as initialOrdenes,
-  pagos as initialPagos,
-  MOCK_TODAY,
-  type CotizacionEstado,
-  type FacturaEstado,
-  type LineaOrden,
+  convertCotizacionToFacturaApi,
+  createCotizacionFromWorkOrderApi,
+  fetchOrdenesComerciales,
+  updateCotizacionEstadoApi,
+  updateFacturaEstadoApi,
   type OrdenComercial,
-  type OrdenTrabajo,
-  type Pago,
-  type PagoFormValues,
-  type PagoMetodo,
-} from '@/lib/mock-data';
-
-type State = {
-  ordenesComerciales: OrdenComercial[];
-  pagos: Pago[];
-};
-
-type Action =
-  | { type: 'ADD_ORDEN'; orden: OrdenComercial }
-  | { type: 'UPDATE_ORDEN'; id: string; data: Partial<OrdenComercial> }
-  | { type: 'ADD_PAGO'; pago: Pago };
-
-function generateOrdenComercialId(existing: { id: string }[]): string {
-  let n = existing.length + 1;
-  let id = `oc${n}`;
-  while (existing.some((item) => item.id === id)) {
-    n += 1;
-    id = `oc${n}`;
-  }
-  return id;
-}
-
-function generatePagoId(existing: { id: string }[]): string {
-  let n = existing.length + 1;
-  let id = `pg${n}`;
-  while (existing.some((item) => item.id === id)) {
-    n += 1;
-    id = `pg${n}`;
-  }
-  return id;
-}
-
-function generateCotizacionNumero(existing: { numero: string }[]): string {
-  const year = new Date(MOCK_TODAY).getFullYear();
-  const prefix = `COT-${year}-`;
-  const nums = existing
-    .filter((o) => o.numero.startsWith(prefix))
-    .map((o) => {
-      const match = o.numero.match(new RegExp(`^${prefix}(\\d+)$`));
-      return match ? parseInt(match[1], 10) : 0;
-    })
-    .filter((n) => n > 0);
-  const next = nums.length > 0 ? Math.max(...nums) + 1 : 100;
-  return `${prefix}${String(next).padStart(4, '0')}`;
-}
-
-function generateFacturaNumero(existing: { numero: string }[]): string {
-  const year = new Date(MOCK_TODAY).getFullYear();
-  const prefix = `FAC-${year}-`;
-  const nums = existing
-    .filter((o) => o.numero.startsWith(prefix))
-    .map((o) => {
-      const match = o.numero.match(new RegExp(`^${prefix}(\\d+)$`));
-      return match ? parseInt(match[1], 10) : 0;
-    })
-    .filter((n) => n > 0);
-  const next = nums.length > 0 ? Math.max(...nums) + 1 : 50;
-  return `${prefix}${String(next).padStart(4, '0')}`;
-}
-
-function addDaysIso(isoDate: string, days: number): string {
-  const d = new Date(`${isoDate}T12:00:00`);
-  d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function buildLineasFromOrdenTrabajo(
-  orden: OrdenTrabajo,
-  lineIdStart: number,
-  getPiezaNombre: (id: string) => string
-): LineaOrden[] {
-  const lineas: LineaOrden[] = [];
-  let lineNum = lineIdStart;
-
-  if (orden.descripcion.trim()) {
-    lineas.push({
-      id: `l${lineNum}`,
-      tipo: 'servicio',
-      referenciaId: 'sv-custom',
-      descripcion: orden.descripcion,
-      cantidad: 1,
-      precioUnitario: 0,
-      subtotal: 0,
-    });
-    lineNum += 1;
-  }
-
-  for (const pu of orden.piezasUsadas) {
-    const subtotal = pu.cantidad * pu.precioUnitario;
-    lineas.push({
-      id: `l${lineNum}`,
-      tipo: 'pieza',
-      referenciaId: pu.piezaId,
-      descripcion: getPiezaNombre(pu.piezaId),
-      cantidad: pu.cantidad,
-      precioUnitario: pu.precioUnitario,
-      subtotal,
-    });
-    lineNum += 1;
-  }
-
-  return lineas;
-}
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'ADD_ORDEN':
-      return { ...state, ordenesComerciales: [...state.ordenesComerciales, action.orden] };
-    case 'UPDATE_ORDEN':
-      return {
-        ...state,
-        ordenesComerciales: state.ordenesComerciales.map((o) =>
-          o.id === action.id ? { ...o, ...action.data } : o
-        ),
-      };
-    case 'ADD_PAGO':
-      return { ...state, pagos: [...state.pagos, action.pago] };
-    default:
-      return state;
-  }
-}
+} from '@/lib/api/ordenes-api';
+import { fetchPagos, registerPagoApi, type Pago } from '@/lib/api/pagos-api';
+import { useAuth } from '@/lib/auth/auth-store';
+import type { CotizacionEstado, FacturaEstado, PagoFormValues } from '@/lib/mock-data';
 
 export type OrdenesComercialesContextValue = {
   ordenesComerciales: OrdenComercial[];
   pagos: Pago[];
+  loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
   facturasPendientesCount: number;
-  createCotizacionFromOrdenTrabajo: (
-    orden: OrdenTrabajo,
-    getPiezaNombre: (id: string) => string
-  ) => OrdenComercial;
+  createCotizacionFromOrdenTrabajo: (ordenTrabajoId: string) => Promise<OrdenComercial>;
   getOrdenComercial: (id: string) => OrdenComercial | undefined;
   getOrdenComercialByOrdenTrabajoId: (ordenTrabajoId: string) => OrdenComercial | undefined;
   getOrdenesByCliente: (clienteId: string) => OrdenComercial[];
   getFacturasPendientes: () => OrdenComercial[];
-  updateCotizacionEstado: (id: string, estado: CotizacionEstado) => boolean;
-  updateFacturaEstado: (id: string, estado: FacturaEstado) => boolean;
-  convertCotizacionToFactura: (cotizacionId: string) => OrdenComercial | null;
+  updateCotizacionEstado: (id: string, estado: CotizacionEstado) => Promise<boolean>;
+  updateFacturaEstado: (id: string, estado: FacturaEstado) => Promise<boolean>;
+  convertCotizacionToFactura: (cotizacionId: string) => Promise<OrdenComercial | null>;
   getPagosByOrdenComercialId: (ordenComercialId: string) => Pago[];
   getPagosByClienteId: (clienteId: string) => Pago[];
   getTotalPagado: (ordenComercialId: string) => number;
-  registerPago: (values: PagoFormValues) => Pago | null;
+  registerPago: (values: PagoFormValues) => Promise<Pago | null>;
 };
 
 const OrdenesComercialesContext = createContext<OrdenesComercialesContextValue | null>(null);
 
 export function OrdenesComercialesProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, {
-    ordenesComerciales: initialOrdenes,
-    pagos: initialPagos,
-  });
+  const { isAuthenticated } = useAuth();
+  const [ordenesComerciales, setOrdenesComerciales] = useState<OrdenComercial[]>([]);
+  const [pagos, setPagos] = useState<Pago[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) {
+      setOrdenesComerciales([]);
+      setPagos([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const [ordenes, pagosData] = await Promise.all([
+        fetchOrdenesComerciales(),
+        fetchPagos(),
+      ]);
+      setOrdenesComerciales(ordenes);
+      setPagos(pagosData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar órdenes comerciales');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   const getOrdenComercial = useCallback(
-    (id: string) => state.ordenesComerciales.find((o) => o.id === id),
-    [state.ordenesComerciales]
+    (id: string) => ordenesComerciales.find((o) => o.id === id),
+    [ordenesComerciales],
   );
 
   const getOrdenComercialByOrdenTrabajoId = useCallback(
     (ordenTrabajoId: string) =>
-      state.ordenesComerciales.find((o) => o.ordenTrabajoId === ordenTrabajoId),
-    [state.ordenesComerciales]
+      ordenesComerciales.find((o) => o.ordenTrabajoId === ordenTrabajoId),
+    [ordenesComerciales],
   );
 
   const getOrdenesByCliente = useCallback(
-    (clienteId: string) =>
-      state.ordenesComerciales.filter((o) => o.clienteId === clienteId),
-    [state.ordenesComerciales]
+    (clienteId: string) => ordenesComerciales.filter((o) => o.clienteId === clienteId),
+    [ordenesComerciales],
   );
 
   const getFacturasPendientes = useCallback(
-    () =>
-      state.ordenesComerciales.filter(
-        (o) => o.tipo === 'factura' && o.estado === 'emitida'
-      ),
-    [state.ordenesComerciales]
+    () => ordenesComerciales.filter((o) => o.tipo === 'factura' && o.estado === 'emitida'),
+    [ordenesComerciales],
   );
 
   const facturasPendientesCount = useMemo(
     () => getFacturasPendientes().length,
-    [getFacturasPendientes]
+    [getFacturasPendientes],
   );
 
   const getPagosByOrdenComercialId = useCallback(
     (ordenComercialId: string) =>
-      state.pagos.filter((p) => p.ordenComercialId === ordenComercialId && p.monto > 0),
-    [state.pagos]
+      pagos.filter((p) => p.ordenComercialId === ordenComercialId && p.monto > 0),
+    [pagos],
   );
 
   const getTotalPagado = useCallback(
     (ordenComercialId: string) =>
       getPagosByOrdenComercialId(ordenComercialId).reduce((sum, p) => sum + p.monto, 0),
-    [getPagosByOrdenComercialId]
+    [getPagosByOrdenComercialId],
   );
 
   const getPagosByClienteId = useCallback(
     (clienteId: string) => {
-      const ordenIds = state.ordenesComerciales
+      const ordenIds = ordenesComerciales
         .filter((o) => o.clienteId === clienteId)
         .map((o) => o.id);
-      return state.pagos.filter(
-        (p) => ordenIds.includes(p.ordenComercialId) && p.monto > 0
-      );
+      return pagos.filter((p) => ordenIds.includes(p.ordenComercialId) && p.monto > 0);
     },
-    [state.ordenesComerciales, state.pagos]
+    [ordenesComerciales, pagos],
   );
 
   const createCotizacionFromOrdenTrabajo = useCallback(
-    (orden: OrdenTrabajo, getPiezaNombre: (id: string) => string): OrdenComercial => {
-      const existing = state.ordenesComerciales.find(
-        (o) => o.ordenTrabajoId === orden.id
-      );
-      if (existing) return existing;
-
-      const lineIdStart =
-        state.ordenesComerciales.reduce(
-          (max, o) =>
-            Math.max(
-              max,
-              ...o.lineas.map((l) => {
-                const n = parseInt(l.id.replace(/\D/g, ''), 10);
-                return Number.isNaN(n) ? 0 : n;
-              })
-            ),
-          0
-        ) + 1;
-
-      const lineas = buildLineasFromOrdenTrabajo(orden, lineIdStart, getPiezaNombre);
-      const subtotal = lineas.reduce((sum, l) => sum + l.subtotal, 0);
-      const iva = Math.round(subtotal * 0.21 * 100) / 100;
-      const total = Math.round((subtotal + iva) * 100) / 100;
-
-      const cotizacion: OrdenComercial = {
-        id: generateOrdenComercialId(state.ordenesComerciales),
-        numero: generateCotizacionNumero(state.ordenesComerciales),
-        tipo: 'cotizacion',
-        estado: 'borrador',
-        clienteId: orden.clienteId,
-        vehiculoId: orden.vehiculoId,
-        ordenTrabajoId: orden.id,
-        fecha: MOCK_TODAY,
-        validezHasta: addDaysIso(MOCK_TODAY, 30),
-        lineas,
-        subtotal,
-        iva,
-        total,
-      };
-
-      dispatch({ type: 'ADD_ORDEN', orden: cotizacion });
+    async (ordenTrabajoId: string): Promise<OrdenComercial> => {
+      const cotizacion = await createCotizacionFromWorkOrderApi(ordenTrabajoId);
+      setOrdenesComerciales((prev) => {
+        const exists = prev.some((o) => o.id === cotizacion.id);
+        return exists ? prev.map((o) => (o.id === cotizacion.id ? cotizacion : o)) : [...prev, cotizacion];
+      });
       return cotizacion;
     },
-    [state.ordenesComerciales]
+    [],
   );
 
   const updateCotizacionEstado = useCallback(
-    (id: string, estado: CotizacionEstado): boolean => {
-      const orden = state.ordenesComerciales.find((o) => o.id === id);
-      if (!orden || orden.tipo !== 'cotizacion') return false;
-      dispatch({ type: 'UPDATE_ORDEN', id, data: { estado } });
-      return true;
+    async (id: string, estado: CotizacionEstado): Promise<boolean> => {
+      try {
+        const updated = await updateCotizacionEstadoApi(id, estado);
+        setOrdenesComerciales((prev) => prev.map((o) => (o.id === id ? updated : o)));
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [state.ordenesComerciales]
+    [],
   );
 
   const updateFacturaEstado = useCallback(
-    (id: string, estado: FacturaEstado): boolean => {
-      const orden = state.ordenesComerciales.find((o) => o.id === id);
-      if (!orden || orden.tipo !== 'factura') return false;
-      dispatch({ type: 'UPDATE_ORDEN', id, data: { estado } });
-      return true;
+    async (id: string, estado: FacturaEstado): Promise<boolean> => {
+      try {
+        const updated = await updateFacturaEstadoApi(id, estado);
+        setOrdenesComerciales((prev) => prev.map((o) => (o.id === id ? updated : o)));
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [state.ordenesComerciales]
+    [],
   );
 
   const convertCotizacionToFactura = useCallback(
-    (cotizacionId: string): OrdenComercial | null => {
-      const cotizacion = state.ordenesComerciales.find((o) => o.id === cotizacionId);
-      if (!cotizacion || cotizacion.tipo !== 'cotizacion') return null;
-      if (cotizacion.estado !== 'aceptada' && cotizacion.estado !== 'enviada') {
+    async (cotizacionId: string): Promise<OrdenComercial | null> => {
+      try {
+        const factura = await convertCotizacionToFacturaApi(cotizacionId);
+        setOrdenesComerciales((prev) => {
+          const updated = prev.map((o) =>
+            o.id === cotizacionId ? { ...o, estado: 'convertida' as const } : o,
+          );
+          return [...updated, factura];
+        });
+        return factura;
+      } catch {
         return null;
       }
-
-      const facturas = state.ordenesComerciales.filter((o) => o.tipo === 'factura');
-      const factura: OrdenComercial = {
-        ...cotizacion,
-        id: generateOrdenComercialId(state.ordenesComerciales),
-        numero: generateFacturaNumero(facturas),
-        tipo: 'factura',
-        estado: 'borrador',
-        fecha: MOCK_TODAY,
-        validezHasta: undefined,
-      };
-
-      dispatch({ type: 'ADD_ORDEN', orden: factura });
-      dispatch({
-        type: 'UPDATE_ORDEN',
-        id: cotizacionId,
-        data: { estado: 'convertida' },
-      });
-      return factura;
     },
-    [state.ordenesComerciales]
+    [],
   );
 
   const registerPago = useCallback(
-    (values: PagoFormValues): Pago | null => {
-      const orden = state.ordenesComerciales.find((o) => o.id === values.ordenComercialId);
-      if (!orden || orden.tipo !== 'factura') return null;
-      if (orden.estado !== 'emitida' && orden.estado !== 'pagada') return null;
-
-      const monto = parseFloat(values.monto);
-      if (!monto || monto <= 0) return null;
-
-      const pago: Pago = {
-        id: generatePagoId(state.pagos),
-        ordenComercialId: values.ordenComercialId,
-        monto,
-        fecha: MOCK_TODAY,
-        metodo: values.metodo as PagoMetodo,
-        referencia: values.referencia.trim() || undefined,
-        notas: values.notas.trim() || undefined,
-      };
-
-      dispatch({ type: 'ADD_PAGO', pago });
-
-      const pagado =
-        state.pagos
-          .filter((p) => p.ordenComercialId === values.ordenComercialId && p.monto > 0)
-          .reduce((sum, p) => sum + p.monto, 0) + monto;
-
-      if (pagado >= orden.total - 0.01) {
-        dispatch({
-          type: 'UPDATE_ORDEN',
-          id: values.ordenComercialId,
-          data: { estado: 'pagada' },
-        });
+    async (values: PagoFormValues): Promise<Pago | null> => {
+      try {
+        const pago = await registerPagoApi(values);
+        setPagos((prev) => [...prev, pago]);
+        const orden = ordenesComerciales.find((o) => o.id === values.ordenComercialId);
+        if (orden) {
+          const pagado =
+            getPagosByOrdenComercialId(values.ordenComercialId).reduce((s, p) => s + p.monto, 0) +
+            pago.monto;
+          if (pagado >= orden.total - 0.01) {
+            setOrdenesComerciales((prev) =>
+              prev.map((o) =>
+                o.id === values.ordenComercialId ? { ...o, estado: 'pagada' } : o,
+              ),
+            );
+          }
+        }
+        return pago;
+      } catch {
+        return null;
       }
-
-      return pago;
     },
-    [state.ordenesComerciales, state.pagos]
+    [ordenesComerciales, getPagosByOrdenComercialId],
   );
 
   const value = useMemo(
     () => ({
-      ordenesComerciales: state.ordenesComerciales,
-      pagos: state.pagos,
+      ordenesComerciales,
+      pagos,
+      loading,
+      error,
+      reload,
       facturasPendientesCount,
       createCotizacionFromOrdenTrabajo,
       getOrdenComercial,
@@ -383,8 +231,11 @@ export function OrdenesComercialesProvider({ children }: { children: ReactNode }
       registerPago,
     }),
     [
-      state.ordenesComerciales,
-      state.pagos,
+      ordenesComerciales,
+      pagos,
+      loading,
+      error,
+      reload,
       facturasPendientesCount,
       createCotizacionFromOrdenTrabajo,
       getOrdenComercial,
@@ -398,7 +249,7 @@ export function OrdenesComercialesProvider({ children }: { children: ReactNode }
       getPagosByClienteId,
       getTotalPagado,
       registerPago,
-    ]
+    ],
   );
 
   return (
@@ -412,16 +263,8 @@ export function useOrdenesComercialesStore() {
   const ctx = useContext(OrdenesComercialesContext);
   if (!ctx) {
     throw new Error(
-      'useOrdenesComercialesStore debe usarse dentro de OrdenesComercialesProvider'
+      'useOrdenesComercialesStore debe usarse dentro de OrdenesComercialesProvider',
     );
   }
   return ctx;
 }
-
-export const emptyPagoFormValues: PagoFormValues = {
-  ordenComercialId: '',
-  monto: '',
-  metodo: 'transferencia',
-  referencia: '',
-  notas: '',
-};

@@ -27,13 +27,17 @@ interface CitaDetalleViewProps {
 }
 
 export function CitaDetalleView({ id }: CitaDetalleViewProps) {
-  const { getCita, updateCita, updateCitaEstado } = useCitasStore();
+  const { getCita, updateCita, updateCitaEstado, loading } = useCitasStore();
   const { getVehiculoLabel, getClienteNombre } = useClientesStore();
   const { getServicioNombre } = useServiciosStore();
   const cita = getCita(id);
 
   const [editing, setEditing] = useState(false);
   const [estadoTarget, setEstadoTarget] = useState<CitaEstado | null>(null);
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Cargando cita…</p>;
+  }
 
   if (!cita) {
     notFound();
@@ -42,17 +46,23 @@ export function CitaDetalleView({ id }: CitaDetalleViewProps) {
   const citaData = cita;
   const canEdit = citaData.estado !== 'completada' && citaData.estado !== 'cancelada';
 
-  function handleUpdate(values: CitaFormValues) {
-    const ok = updateCita(citaData.id, values);
+  async function handleUpdate(values: CitaFormValues) {
+    const ok = await updateCita(citaData.id, values);
     if (ok) {
       toast.success('Cita actualizada');
       setEditing(false);
+    } else {
+      toast.error('No se pudo actualizar la cita');
     }
   }
 
-  function handleEstadoChange(estado: CitaEstado) {
-    updateCitaEstado(citaData.id, estado);
-    toast.success(`Cita ${citaEstadoLabels[estado].toLowerCase()}`);
+  async function handleEstadoChange(estado: CitaEstado) {
+    const ok = await updateCitaEstado(citaData.id, estado);
+    if (ok) {
+      toast.success(`Cita ${citaEstadoLabels[estado].toLowerCase()}`);
+    } else {
+      toast.error('No se pudo actualizar el estado');
+    }
     setEstadoTarget(null);
   }
 

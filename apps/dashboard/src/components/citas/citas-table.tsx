@@ -134,25 +134,35 @@ export function CitasTable({
     resetKey,
   });
 
-  function handleCreate(values: CitaFormValues) {
-    createCita(values);
+  async function handleCreate(values: CitaFormValues) {
+    const cita = await createCita(values);
+    if (!cita) {
+      toast.error('No se pudo crear la cita');
+      return;
+    }
     toast.success('Cita creada');
     setOpenCreateDialog(false);
   }
 
-  function handleUpdate(values: CitaFormValues) {
+  async function handleUpdate(values: CitaFormValues) {
     if (!editingCita) return;
-    const ok = updateCita(editingCita.id, values);
+    const ok = await updateCita(editingCita.id, values);
     if (ok) {
       toast.success('Cita actualizada');
       setEditingCita(null);
+    } else {
+      toast.error('No se pudo actualizar la cita');
     }
   }
 
-  function handleConfirmEstadoChange() {
+  async function handleConfirmEstadoChange() {
     if (!estadoTarget) return;
-    updateCitaEstado(estadoTarget.cita.id, estadoTarget.estado);
-    toast.success(`Cita ${estadoTarget.label.toLowerCase()}`);
+    const ok = await updateCitaEstado(estadoTarget.cita.id, estadoTarget.estado);
+    if (ok) {
+      toast.success(`Cita ${estadoTarget.label.toLowerCase()}`);
+    } else {
+      toast.error('No se pudo actualizar el estado');
+    }
     setEstadoTarget(null);
   }
 

@@ -56,8 +56,8 @@ export function OrdenesTable({ tipo }: OrdenesTableProps) {
     resetKey: search,
   });
 
-  function handleConvertir(orden: OrdenComercial) {
-    const factura = convertCotizacionToFactura(orden.id);
+  async function handleConvertir(orden: OrdenComercial) {
+    const factura = await convertCotizacionToFactura(orden.id);
     if (!factura) {
       toast.error('No se pudo convertir la cotización');
       return;

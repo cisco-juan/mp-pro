@@ -21,8 +21,12 @@ export function CitasPageContent() {
   const [openCreate, setOpenCreate] = useState(false);
   const count = getCitasCountSemanaActual();
 
-  function handleCreate(values: CitaFormValues) {
-    createCita(values);
+  async function handleCreate(values: CitaFormValues) {
+    const cita = await createCita(values);
+    if (!cita) {
+      toast.error('No se pudo crear la cita');
+      return;
+    }
     toast.success('Cita creada');
     setOpenCreate(false);
   }

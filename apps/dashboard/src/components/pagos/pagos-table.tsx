@@ -35,11 +35,16 @@ import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
-import { pagoMetodoLabels, type PagoMetodo } from '@/lib/mock-data';
-import {
-  emptyPagoFormValues,
-  useOrdenesComercialesStore,
-} from '@/lib/ordenes/ordenes-comerciales-store';
+import { pagoMetodoLabels, type PagoFormValues, type PagoMetodo } from '@/lib/mock-data';
+import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
+
+const emptyPagoFormValues: PagoFormValues = {
+  ordenComercialId: '',
+  monto: '',
+  metodo: 'transferencia',
+  referencia: '',
+  notas: '',
+};
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function PagosTable() {
@@ -82,8 +87,8 @@ export function PagosTable() {
     resetKey,
   });
 
-  function handleCreate() {
-    const pago = registerPago({
+  async function handleCreate() {
+    const pago = await registerPago({
       ...form,
       ordenComercialId: form.ordenComercialId || facturasPendientes[0]?.id || '',
     });

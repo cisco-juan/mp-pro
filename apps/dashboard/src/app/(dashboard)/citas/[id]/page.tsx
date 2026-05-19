@@ -1,20 +1,12 @@
 import { PageHeader } from '@/components/layout/page-header';
 import { CitaDetalleView } from '@/components/citas/cita-detalle-view';
-import { getCitaById, getClienteNombre, getServicioNombre } from '@/lib/mock-data';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
-  const { id } = await params;
-  const cita = getCitaById(id);
-  if (!cita) {
-    return { title: 'Cita no encontrada' };
-  }
-  return {
-    title: `${getServicioNombre(cita.servicioId)} · ${getClienteNombre(cita.clienteId)}`,
-  };
+export function generateMetadata() {
+  return { title: 'Detalle de cita' };
 }
 
 export default async function CitaDetallePage({ params }: PageProps) {

@@ -187,10 +187,20 @@ export class WorkOrdersService {
   }
 
   async linkCommercialOrder(id: string, dto: LinkCommercialOrderDto) {
-    await this.getOrderOrThrow(id);
+    const workOrder = await this.getOrderOrThrow(id);
+    const commercialOrderId = dto.ordenComercialId.trim();
+    const commercialOrder = await this.prisma.client.commercialOrder.findUnique({
+      where: { id: commercialOrderId },
+    });
+    if (!commercialOrder) {
+      throw new NotFoundException(`Orden comercial #${commercialOrderId} no encontrada`);
+    }
+    if (commercialOrder.clientId !== workOrder.clientId) {
+      throw new BadRequestException('La orden comercial no pertenece al mismo cliente');
+    }
     const order = await this.prisma.client.workOrder.update({
       where: { id },
-      data: { ordenComercialId: dto.ordenComercialId.trim() },
+      data: { ordenComercialId: commercialOrderId },
       include: workOrderInclude,
     });
     return mapWorkOrderToResponse(order);

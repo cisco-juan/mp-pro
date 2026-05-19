@@ -48,26 +48,26 @@ export function OrdenDetalle({ orden: ordenProp }: OrdenDetalleProps) {
   const totalPagado = getTotalPagado(orden.id);
   const pendiente = orden.total - totalPagado;
 
-  function handleEnviarCotizacion() {
-    if (updateCotizacionEstado(orden.id, 'enviada')) {
+  async function handleEnviarCotizacion() {
+    if (await updateCotizacionEstado(orden.id, 'enviada')) {
       toast.success('Cotización enviada', { description: orden.numero });
     }
   }
 
-  function handleAceptarCotizacion() {
-    if (updateCotizacionEstado(orden.id, 'aceptada')) {
+  async function handleAceptarCotizacion() {
+    if (await updateCotizacionEstado(orden.id, 'aceptada')) {
       toast.success('Cotización aceptada');
     }
   }
 
-  function handleRechazarCotizacion() {
-    if (updateCotizacionEstado(orden.id, 'rechazada')) {
+  async function handleRechazarCotizacion() {
+    if (await updateCotizacionEstado(orden.id, 'rechazada')) {
       toast.success('Cotización rechazada');
     }
   }
 
-  function handleConvertirFactura() {
-    const factura = convertCotizacionToFactura(orden.id);
+  async function handleConvertirFactura() {
+    const factura = await convertCotizacionToFactura(orden.id);
     if (!factura) {
       toast.error('No se pudo convertir la cotización');
       return;
@@ -76,8 +76,8 @@ export function OrdenDetalle({ orden: ordenProp }: OrdenDetalleProps) {
     router.push(`/ordenes/${factura.id}`);
   }
 
-  function handleEmitirFactura() {
-    if (updateFacturaEstado(orden.id, 'emitida')) {
+  async function handleEmitirFactura() {
+    if (await updateFacturaEstado(orden.id, 'emitida')) {
       toast.success('Factura emitida', { description: orden.numero });
     }
   }

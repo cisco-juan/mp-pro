@@ -74,8 +74,8 @@ export function ServiciosTable() {
     resetKey,
   });
 
-  function handleCreate() {
-    const servicio = createServicio(form);
+  async function handleCreate() {
+    const servicio = await createServicio(form);
     if (!servicio) {
       toast.error('No se pudo registrar el servicio');
       return;
