@@ -31,17 +31,18 @@ import {
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   getClienteNombre,
-  getUsuarioById,
   type OrdenEstado,
   type OrdenTrabajoTipo,
 } from '@/lib/mock-data';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { useTallerStore } from '@/lib/taller/taller-store';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function OrdenesTrabajoTable() {
   const { ordenesTrabajo } = useTallerStore();
   const { getVehiculoLabel } = useClientesStore();
+  const { getUsuario } = useUsuariosStore();
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
@@ -146,7 +147,7 @@ export function OrdenesTrabajoTable() {
               </TableRow>
             ) : (
               paginatedItems.map((orden) => {
-                const mecanico = getUsuarioById(orden.usuarioId);
+                const mecanico = orden.usuarioId ? getUsuario(orden.usuarioId) : undefined;
 
                 return (
                   <TableRow key={orden.id} className="transition-colors hover:bg-muted/40">

@@ -50,9 +50,6 @@ import {
 import type { Cliente } from '@/lib/mock-data';
 import {
   documentoTipoLabels,
-  getOrdenComercialById,
-  getOrdenesComercialesByClienteId,
-  getPagosByClienteId,
   getServicioNombre,
   citaEstadoLabels,
   ordenComercialTipoLabels,
@@ -63,6 +60,7 @@ import {
   type ClienteFormValues,
 } from '@/lib/mock-data';
 import { useCitasStore } from '@/lib/citas/citas-store';
+import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
 import { useTallerStore } from '@/lib/taller/taller-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
@@ -110,11 +108,13 @@ function ClienteDetalleContent({
 
   const { getCitasByCliente } = useCitasStore();
   const { getOrdenesByCliente } = useTallerStore();
+  const { getOrdenesByCliente: getOrdenesComercialesByCliente, getPagosByClienteId, getOrdenComercial } =
+    useOrdenesComercialesStore();
 
   const vehiculosCliente = getVehiculosByCliente(id);
   const citasCliente = getCitasByCliente(id);
   const ordenesTrabajoCliente = getOrdenesByCliente(id);
-  const ordenesComercialesCliente = getOrdenesComercialesByClienteId(id);
+  const ordenesComercialesCliente = getOrdenesComercialesByCliente(id);
   const pagosCliente = getPagosByClienteId(id);
 
   const direccionFormateada = formatClienteDireccion(cliente.direccion);
@@ -390,7 +390,7 @@ function ClienteDetalleContent({
                 items={pagosCliente}
                 emptyMessage="Sin pagos registrados"
                 renderItem={(p) => {
-                  const orden = getOrdenComercialById(p.ordenComercialId);
+                  const orden = getOrdenComercial(p.ordenComercialId);
                   return (
                     <div
                       key={p.id}

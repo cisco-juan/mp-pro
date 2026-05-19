@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useInventarioStore } from '@/lib/inventario/inventario-store';
 import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
 import { useTallerStore } from '@/lib/taller/taller-store';
 
@@ -19,6 +20,7 @@ export function GenerarCotizacionButton({
 }: GenerarCotizacionButtonProps) {
   const router = useRouter();
   const { getOrdenTrabajo, linkOrdenComercial } = useTallerStore();
+  const { getPiezaNombre } = useInventarioStore();
   const { getOrdenComercial, getOrdenComercialByOrdenTrabajoId, createCotizacionFromOrdenTrabajo } =
     useOrdenesComercialesStore();
 
@@ -30,9 +32,9 @@ export function GenerarCotizacionButton({
     const orden = getOrdenTrabajo(ordenTrabajoId);
     if (!orden) return;
 
-    const cotizacion = createCotizacionFromOrdenTrabajo(orden);
+    const cotizacion = createCotizacionFromOrdenTrabajo(orden, getPiezaNombre);
     linkOrdenComercial(ordenTrabajoId, cotizacion.id);
-    toast.success('Cotización generada (maquetación)', {
+    toast.success('Cotización generada', {
       description: `Se ha creado ${cotizacion.numero} en borrador.`,
     });
     router.push(`/ordenes/${cotizacion.id}`);

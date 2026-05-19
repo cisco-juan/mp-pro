@@ -49,14 +49,14 @@ export function CitaDetalleView({ id }: CitaDetalleViewProps) {
   function handleUpdate(values: CitaFormValues) {
     const ok = updateCita(citaData.id, values);
     if (ok) {
-      toast.success('Cita actualizada (maquetación)');
+      toast.success('Cita actualizada');
       setEditing(false);
     }
   }
 
   function handleEstadoChange(estado: CitaEstado) {
     updateCitaEstado(citaData.id, estado);
-    toast.success(`Cita ${citaEstadoLabels[estado].toLowerCase()} (maquetación)`);
+    toast.success(`Cita ${citaEstadoLabels[estado].toLowerCase()}`);
     setEstadoTarget(null);
   }
 

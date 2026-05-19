@@ -23,7 +23,7 @@ export function CitasPageContent() {
 
   function handleCreate(values: CitaFormValues) {
     createCita(values);
-    toast.success('Cita creada (maquetación)');
+    toast.success('Cita creada');
     setOpenCreate(false);
   }
 

@@ -136,7 +136,7 @@ export function CitasTable({
 
   function handleCreate(values: CitaFormValues) {
     createCita(values);
-    toast.success('Cita creada (maquetación)');
+    toast.success('Cita creada');
     setOpenCreateDialog(false);
   }
 
@@ -144,7 +144,7 @@ export function CitasTable({
     if (!editingCita) return;
     const ok = updateCita(editingCita.id, values);
     if (ok) {
-      toast.success('Cita actualizada (maquetación)');
+      toast.success('Cita actualizada');
       setEditingCita(null);
     }
   }
@@ -152,7 +152,7 @@ export function CitasTable({
   function handleConfirmEstadoChange() {
     if (!estadoTarget) return;
     updateCitaEstado(estadoTarget.cita.id, estadoTarget.estado);
-    toast.success(`Cita ${estadoTarget.label.toLowerCase()} (maquetación)`);
+    toast.success(`Cita ${estadoTarget.label.toLowerCase()}`);
     setEstadoTarget(null);
   }
 

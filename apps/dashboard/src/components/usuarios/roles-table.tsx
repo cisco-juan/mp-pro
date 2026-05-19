@@ -10,9 +10,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { DataTableShell } from '@/components/shared/data-table-shell';
-import { getUsuariosByRolId, type Rol } from '@/lib/mock-data';
+import type { Rol } from '@/lib/mock-data';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 
 export function RolesTable({ data }: { data: Rol[] }) {
+  const { getUsuariosByRolId } = useUsuariosStore();
   return (
     <DataTableShell>
       <Table>

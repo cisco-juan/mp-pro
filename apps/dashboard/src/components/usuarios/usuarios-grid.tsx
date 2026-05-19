@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ActivoBadge } from '@/components/shared/status-badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { getRolNombre, type Usuario } from '@/lib/mock-data';
+import type { Usuario } from '@/lib/mock-data';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 
 function getInitials(name: string) {
   return name
@@ -13,6 +14,7 @@ function getInitials(name: string) {
 }
 
 export function UsuariosGrid({ data }: { data: Usuario[] }) {
+  const { getRolNombre } = useUsuariosStore();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {data.map((usuario) => (

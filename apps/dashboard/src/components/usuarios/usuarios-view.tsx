@@ -25,17 +25,25 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { roles, usuarios } from '@/lib/mock-data';
+import type { RolFormValues, UsuarioFormValues } from '@/lib/mock-data';
+import {
+  emptyRolFormValues,
+  emptyUsuarioFormValues,
+  useUsuariosStore,
+} from '@/lib/usuarios/usuarios-store';
 import { UsuariosGrid } from './usuarios-grid';
 import { UsuariosTable } from './usuarios-table';
 import { RolesTable } from './roles-table';
 
 export function UsuariosView() {
+  const { usuarios, roles, createUsuario, createRol } = useUsuariosStore();
   const [vista, setVista] = useState<'cards' | 'tabla'>('cards');
   const [search, setSearch] = useState('');
   const [filtroActivo, setFiltroActivo] = useState<string>('todos');
   const [openUsuario, setOpenUsuario] = useState(false);
   const [openRol, setOpenRol] = useState(false);
+  const [usuarioForm, setUsuarioForm] = useState<UsuarioFormValues>(emptyUsuarioFormValues);
+  const [rolForm, setRolForm] = useState<RolFormValues>(emptyRolFormValues);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -62,12 +70,27 @@ export function UsuariosView() {
   });
 
   function handleCreateUsuario() {
-    toast.success('Usuario creado (maquetación)');
+    const usuario = createUsuario({
+      ...usuarioForm,
+      rolId: usuarioForm.rolId || roles[0]?.id || '',
+    });
+    if (!usuario) {
+      toast.error('No se pudo crear el usuario');
+      return;
+    }
+    toast.success('Usuario creado', { description: usuario.nombre });
+    setUsuarioForm(emptyUsuarioFormValues);
     setOpenUsuario(false);
   }
 
   function handleCreateRol() {
-    toast.success('Rol creado (maquetación)');
+    const rol = createRol(rolForm);
+    if (!rol) {
+      toast.error('No se pudo crear el rol');
+      return;
+    }
+    toast.success('Rol creado', { description: rol.nombre });
+    setRolForm(emptyRolFormValues);
     setOpenRol(false);
   }
 
@@ -138,15 +161,29 @@ export function UsuariosView() {
                 <div className="flex flex-col gap-4 py-2">
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="nombre">Nombre</Label>
-                    <Input id="nombre" placeholder="Nombre completo" />
+                    <Input
+                      id="nombre"
+                      placeholder="Nombre completo"
+                      value={usuarioForm.nombre}
+                      onChange={(e) => setUsuarioForm((f) => ({ ...f, nombre: e.target.value }))}
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="usuario@mppro.local" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="usuario@mppro.local"
+                      value={usuarioForm.email}
+                      onChange={(e) => setUsuarioForm((f) => ({ ...f, email: e.target.value }))}
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="rol">Rol</Label>
-                    <Select defaultValue={roles[0]?.id}>
+                    <Select
+                      value={usuarioForm.rolId || roles[0]?.id}
+                      onValueChange={(v) => setUsuarioForm((f) => ({ ...f, rolId: v }))}
+                    >
                       <SelectTrigger id="rol">
                         <SelectValue />
                       </SelectTrigger>
@@ -208,11 +245,21 @@ export function UsuariosView() {
               <div className="flex flex-col gap-4 py-2">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="rol-nombre">Nombre</Label>
-                  <Input id="rol-nombre" placeholder="Ej. Supervisor" />
+                  <Input
+                    id="rol-nombre"
+                    placeholder="Ej. Supervisor"
+                    value={rolForm.nombre}
+                    onChange={(e) => setRolForm((f) => ({ ...f, nombre: e.target.value }))}
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="rol-desc">Descripción</Label>
-                  <Input id="rol-desc" placeholder="Descripción del rol" />
+                  <Input
+                    id="rol-desc"
+                    placeholder="Descripción del rol"
+                    value={rolForm.descripcion}
+                    onChange={(e) => setRolForm((f) => ({ ...f, descripcion: e.target.value }))}
+                  />
                 </div>
               </div>
               <DialogFooter>

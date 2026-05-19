@@ -34,27 +34,32 @@ import { PagoMetodoBadge } from '@/components/shared/status-badge';
 import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
+import { getClienteNombre, pagoMetodoLabels, type PagoMetodo } from '@/lib/mock-data';
 import {
-  pagos,
-  ordenesComerciales,
-  getClienteNombre,
-  getOrdenComercialById,
-  pagoMetodoLabels,
-  type PagoMetodo,
-} from '@/lib/mock-data';
+  emptyPagoFormValues,
+  useOrdenesComercialesStore,
+} from '@/lib/ordenes/ordenes-comerciales-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
-const pagosActivos = pagos.filter((p) => p.monto > 0);
-
 export function PagosTable() {
+  const {
+    pagos,
+    getOrdenComercial,
+    getFacturasPendientes,
+    registerPago,
+  } = useOrdenesComercialesStore();
+  const pagosActivos = useMemo(() => pagos.filter((p) => p.monto > 0), [pagos]);
   const [search, setSearch] = useState('');
   const [filtroMetodo, setFiltroMetodo] = useState<string>('todos');
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyPagoFormValues);
+
+  const facturasPendientes = getFacturasPendientes();
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return pagosActivos.filter((p) => {
-      const orden = getOrdenComercialById(p.ordenComercialId);
+      const orden = getOrdenComercial(p.ordenComercialId);
       if (!orden) return false;
 
       const matchesSearch =
@@ -67,7 +72,7 @@ export function PagosTable() {
 
       return matchesSearch && matchesMetodo;
     });
-  }, [search, filtroMetodo]);
+  }, [pagosActivos, search, filtroMetodo, getOrdenComercial]);
 
   const resetKey = `${search}-${filtroMetodo}`;
   const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
@@ -75,12 +80,21 @@ export function PagosTable() {
     resetKey,
   });
 
-  const facturasPendientes = ordenesComerciales.filter(
-    (o) => o.tipo === 'factura' && o.estado === 'emitida'
-  );
-
   function handleCreate() {
-    toast.success('Pago registrado (maquetación)');
+    const pago = registerPago({
+      ...form,
+      ordenComercialId: form.ordenComercialId || facturasPendientes[0]?.id || '',
+    });
+    if (!pago) {
+      toast.error('No se pudo registrar el pago', {
+        description: 'Selecciona una factura emitida y un monto válido.',
+      });
+      return;
+    }
+    toast.success('Pago registrado', {
+      description: `${pago.monto.toLocaleString('es-ES')} € registrados`,
+    });
+    setForm(emptyPagoFormValues);
     setOpen(false);
   }
 
@@ -128,7 +142,10 @@ export function PagosTable() {
               <div className="flex flex-col gap-4 py-2">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="factura">Factura</Label>
-                  <Select defaultValue={facturasPendientes[0]?.id}>
+                  <Select
+                    value={form.ordenComercialId || facturasPendientes[0]?.id || ''}
+                    onValueChange={(v) => setForm((f) => ({ ...f, ordenComercialId: v }))}
+                  >
                     <SelectTrigger id="factura">
                       <SelectValue placeholder="Seleccionar factura" />
                     </SelectTrigger>
@@ -144,11 +161,23 @@ export function PagosTable() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="monto">Monto (€)</Label>
-                    <Input id="monto" type="number" step="0.01" />
+                    <Input
+                      id="monto"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={form.monto}
+                      onChange={(e) => setForm((f) => ({ ...f, monto: e.target.value }))}
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="metodo">Método</Label>
-                    <Select defaultValue="transferencia">
+                    <Select
+                      value={form.metodo}
+                      onValueChange={(v) =>
+                        setForm((f) => ({ ...f, metodo: v as PagoMetodo }))
+                      }
+                    >
                       <SelectTrigger id="metodo">
                         <SelectValue />
                       </SelectTrigger>
@@ -201,7 +230,7 @@ export function PagosTable() {
               </TableRow>
             ) : (
               paginatedItems.map((pago) => {
-                const orden = getOrdenComercialById(pago.ordenComercialId);
+                const orden = getOrdenComercial(pago.ordenComercialId);
                 return (
                   <TableRow key={pago.id} className="transition-colors hover:bg-muted/40">
                     <TableCell className="text-muted-foreground">

@@ -34,12 +34,24 @@ import { ActivoBadge } from '@/components/shared/status-badge';
 import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { servicios, servicioCategorias } from '@/lib/mock-data';
+import type { ServicioFormValues } from '@/lib/mock-data';
+import { servicioCategorias as defaultCategorias } from '@/lib/mock-data';
+import {
+  emptyServicioFormValues,
+  useServiciosStore,
+} from '@/lib/servicios/servicios-store';
 
 export function ServiciosTable() {
+  const { servicios, categorias, createServicio, toggleServicioActivo } = useServiciosStore();
   const [search, setSearch] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<ServicioFormValues>(emptyServicioFormValues);
+
+  const allCategorias = useMemo(() => {
+    const merged = new Set([...defaultCategorias, ...categorias]);
+    return [...merged].sort();
+  }, [categorias]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -54,7 +66,7 @@ export function ServiciosTable() {
 
       return matchesSearch && matchesCategoria;
     });
-  }, [search, filtroCategoria]);
+  }, [servicios, search, filtroCategoria]);
 
   const resetKey = `${search}-${filtroCategoria}`;
   const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
@@ -63,7 +75,13 @@ export function ServiciosTable() {
   });
 
   function handleCreate() {
-    toast.success('Servicio registrado (maquetación)');
+    const servicio = createServicio(form);
+    if (!servicio) {
+      toast.error('No se pudo registrar el servicio');
+      return;
+    }
+    toast.success('Servicio registrado', { description: servicio.nombre });
+    setForm(emptyServicioFormValues);
     setOpen(false);
   }
 
@@ -87,7 +105,7 @@ export function ServiciosTable() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todas las categorías</SelectItem>
-              {servicioCategorias.map((cat) => (
+              {allCategorias.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
                 </SelectItem>
@@ -109,17 +127,57 @@ export function ServiciosTable() {
               <div className="flex flex-col gap-4 py-2">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="nombre">Nombre</Label>
-                  <Input id="nombre" placeholder="Nombre del servicio" />
+                  <Input
+                    id="nombre"
+                    placeholder="Nombre del servicio"
+                    value={form.nombre}
+                    onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="descripcion">Descripción</Label>
+                  <Input
+                    id="descripcion"
+                    value={form.descripcion}
+                    onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="precio">Precio (€)</Label>
-                    <Input id="precio" type="number" step="0.01" />
+                    <Label htmlFor="categoria">Categoría</Label>
+                    <Input
+                      id="categoria"
+                      list="categorias-servicio"
+                      value={form.categoria}
+                      onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+                    />
+                    <datalist id="categorias-servicio">
+                      {allCategorias.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="duracion">Duración (min)</Label>
-                    <Input id="duracion" type="number" />
+                    <Input
+                      id="duracion"
+                      type="number"
+                      min={15}
+                      value={form.duracionMin}
+                      onChange={(e) => setForm((f) => ({ ...f, duracionMin: e.target.value }))}
+                    />
                   </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="precio">Precio (€)</Label>
+                  <Input
+                    id="precio"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={form.precio}
+                    onChange={(e) => setForm((f) => ({ ...f, precio: e.target.value }))}
+                  />
                 </div>
               </div>
               <DialogFooter>
@@ -148,12 +206,13 @@ export function ServiciosTable() {
               <TableHead>Duración</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Precio</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   No se encontraron servicios
                 </TableCell>
               </TableRow>
@@ -173,6 +232,20 @@ export function ServiciosTable() {
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {servicio.precio.toLocaleString('es-ES')} €
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        toggleServicioActivo(servicio.id);
+                        toast.success(
+                          servicio.activo ? 'Servicio desactivado' : 'Servicio activado'
+                        );
+                      }}
+                    >
+                      {servicio.activo ? 'Desactivar' : 'Activar'}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

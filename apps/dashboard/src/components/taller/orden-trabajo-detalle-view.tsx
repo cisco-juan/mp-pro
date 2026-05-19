@@ -40,13 +40,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
+import { useInventarioStore } from '@/lib/inventario/inventario-store';
 import { useTallerStore } from '@/lib/taller/taller-store';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import {
   getClienteNombre,
   getPiezaNombre,
-  getUsuarioById,
-  getUsuariosMecanicos,
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   type OrdenEstado,
@@ -70,6 +70,8 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
     assignMecanico,
   } = useTallerStore();
   const { getVehiculoLabel } = useClientesStore();
+  const { getPiezaNombre, reservarStock } = useInventarioStore();
+  const { getUsuario, getUsuariosMecanicos } = useUsuariosStore();
 
   const orden = getOrdenTrabajo(id);
   const [editing, setEditing] = useState(false);
@@ -81,7 +83,7 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
   }
 
   const ordenData = orden;
-  const mecanico = getUsuarioById(ordenData.usuarioId);
+  const mecanico = ordenData.usuarioId ? getUsuario(ordenData.usuarioId) : undefined;
   const mecanicos = getUsuariosMecanicos();
   const canEdit = ordenData.estado !== 'completado';
   const totalPiezas = ordenData.piezasUsadas.reduce(
@@ -92,20 +94,20 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
   function handleUpdate(values: OrdenTrabajoFormValues) {
     const ok = updateOrdenTrabajo(ordenData.id, values);
     if (ok) {
-      toast.success('Orden actualizada (maquetación)');
+      toast.success('Orden actualizada');
       setEditing(false);
     }
   }
 
   function handleEstadoChange(estado: OrdenEstado) {
     updateOrdenEstado(ordenData.id, estado);
-    toast.success(`OT ${ordenEstadoLabels[estado].toLowerCase()} (maquetación)`);
+    toast.success(`OT ${ordenEstadoLabels[estado].toLowerCase()}`);
     setEstadoTarget(null);
   }
 
   function handleMecanicoChange(usuarioId: string) {
     assignMecanico(ordenData.id, usuarioId);
-    toast.success('Mecánico asignado (maquetación)');
+    toast.success('Mecánico asignado');
   }
 
   return (
@@ -271,7 +273,7 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
                               className="size-8 text-destructive"
                               onClick={() => {
                                 removePieza(ordenData.id, i);
-                                toast.success('Pieza eliminada (maquetación)');
+                                toast.success('Pieza eliminada');
                               }}
                             >
                               <Trash2 className="size-4" />
@@ -386,8 +388,12 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
         onOpenChange={setOpenPieza}
         piezasExistentes={ordenData.piezasUsadas}
         onAdd={(pieza) => {
+          if (!reservarStock(pieza.piezaId, pieza.cantidad)) {
+            toast.error('Stock insuficiente en inventario');
+            return;
+          }
           addPieza(ordenData.id, pieza);
-          toast.success('Pieza añadida (maquetación)');
+          toast.success('Pieza añadida');
         }}
       />
 

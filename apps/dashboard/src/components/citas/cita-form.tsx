@@ -18,10 +18,10 @@ import {
   citaToFormValues,
   emptyCitaFormValues,
   MOCK_TODAY,
-  servicios,
   type Cita,
   type CitaFormValues,
 } from '@/lib/mock-data';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
 import {
   hasCitaFormErrors,
   validateCitaForm,
@@ -55,6 +55,7 @@ export function CitaForm({
   formId,
 }: CitaFormProps) {
   const { clientes, vehiculos } = useClientesStore();
+  const { serviciosActivos } = useServiciosStore();
   const isSheet = layout === 'sheet';
 
   const [values, setValues] = useState<CitaFormValues>(() => {
@@ -189,7 +190,7 @@ export function CitaForm({
               <SelectValue placeholder="Seleccionar servicio" />
             </SelectTrigger>
             <SelectContent>
-              {servicios.map((s) => (
+              {serviciosActivos.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.nombre}
                 </SelectItem>

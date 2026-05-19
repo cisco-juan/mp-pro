@@ -13,7 +13,8 @@ import {
 import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { getRolNombre, type Usuario } from '@/lib/mock-data';
+import type { Usuario } from '@/lib/mock-data';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 
 function getInitials(name: string) {
   return name
@@ -25,6 +26,7 @@ function getInitials(name: string) {
 }
 
 export function UsuariosTable({ data }: { data: Usuario[] }) {
+  const { getRolNombre } = useUsuariosStore();
   const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
     items: data,
   });

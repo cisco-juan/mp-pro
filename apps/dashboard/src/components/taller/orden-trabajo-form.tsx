@@ -13,11 +13,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 import {
   emptyOrdenTrabajoFormValues,
   ordenTrabajoToFormValues,
   ordenTrabajoTipoLabels,
-  getUsuariosMecanicos,
   MOCK_TODAY,
   type OrdenTrabajo,
   type OrdenTrabajoFormValues,
@@ -56,8 +56,9 @@ export function OrdenTrabajoForm({
   formId,
 }: OrdenTrabajoFormProps) {
   const { clientes, vehiculos } = useClientesStore();
+  const { getUsuariosMecanicos } = useUsuariosStore();
   const isSheet = layout === 'sheet';
-  const mecanicos = useMemo(() => getUsuariosMecanicos(), []);
+  const mecanicos = useMemo(() => getUsuariosMecanicos(), [getUsuariosMecanicos]);
 
   const [values, setValues] = useState<OrdenTrabajoFormValues>(() => {
     if (orden) return ordenTrabajoToFormValues(orden);
