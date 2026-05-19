@@ -146,13 +146,20 @@ describe('Taller / órdenes de trabajo API (e2e)', () => {
   });
 
   it('PATCH /work-orders/:id/link-commercial-order — vincula cotización', async () => {
+    const cotizacion = await api.post(
+      '/commercial-orders/from-work-order',
+      { ordenTrabajoId: createdOrderId },
+      authHeaders(),
+    );
+    expect(cotizacion.status).toBe(201);
+
     const res = await api.patch(
       `/work-orders/${createdOrderId}/link-commercial-order`,
-      { ordenComercialId: 'oc-e2e-1' },
+      { ordenComercialId: cotizacion.data.id },
       authHeaders(),
     );
 
     expect(res.status).toBe(200);
-    expect(res.data.ordenComercialId).toBe('oc-e2e-1');
+    expect(res.data.ordenComercialId).toBe(cotizacion.data.id);
   });
 });

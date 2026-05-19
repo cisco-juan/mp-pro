@@ -95,6 +95,8 @@ model Client {
   direccionProvincia   String?        @map("direccion_provincia")
   vehicles             Vehicle[]
   workOrders           WorkOrder[]
+  appointments         Appointment[]
+  commercialOrders     CommercialOrder[]
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
@@ -114,11 +116,166 @@ model Vehicle {
   proximoMantenimiento DateTime       @map("proximo_mantenimiento") @db.Date
   estado               VehiculoEstado @default(activo)
   workOrders           WorkOrder[]
+  appointments         Appointment[]
+  commercialOrders     CommercialOrder[]
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
   @@index([clientId])
   @@map("vehicles")
+}
+
+model ServiceCatalog {
+  id          String        @id @default(cuid())
+  nombre      String
+  descripcion String        @default("")
+  precio      Decimal       @db.Decimal(10, 2)
+  duracionMin Int           @default(60) @map("duracion_min")
+  categoria   String
+  activo      Boolean       @default(true)
+  appointments Appointment[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([categoria])
+  @@map("service_catalog")
+}
+
+enum AppointmentEstado {
+  pendiente
+  confirmada
+  completada
+  cancelada
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  clientId    String            @map("client_id")
+  client      Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  vehicleId   String            @map("vehicle_id")
+  vehicle     Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  serviceId   String            @map("service_id")
+  service     ServiceCatalog    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  fecha       DateTime          @db.Date
+  hora        String
+  duracionMin Int               @map("duracion_min")
+  estado      AppointmentEstado @default(pendiente)
+  notas       String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@index([vehicleId])
+  @@index([serviceId])
+  @@index([fecha])
+  @@map("appointments")
+}
+
+enum CommercialOrderTipo {
+  cotizacion
+  factura
+}
+
+enum CommercialOrderEstado {
+  borrador
+  enviada
+  aceptada
+  rechazada
+  convertida
+  emitida
+  pagada
+  vencida
+  anulada
+}
+
+enum CommercialOrderLineTipo {
+  servicio
+  pieza
+}
+
+model CommercialOrder {
+  id            String                  @id @default(cuid())
+  numero        String                  @unique
+  tipo          CommercialOrderTipo
+  estado        CommercialOrderEstado
+  clientId      String                  @map("client_id")
+  client        Client                  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  vehicleId     String?                 @map("vehicle_id")
+  vehicle       Vehicle?                @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  fecha         DateTime                @db.Date
+  validezHasta  DateTime?               @map("validez_hasta") @db.Date
+  subtotal      Decimal                 @db.Decimal(10, 2)
+  iva           Decimal                 @db.Decimal(10, 2)
+  total         Decimal                 @db.Decimal(10, 2)
+  lineas        CommercialOrderLine[]
+  payments      Payment[]
+  workOrders    WorkOrder[]
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@index([vehicleId])
+  @@index([tipo])
+  @@index([estado])
+  @@map("commercial_orders")
+}
+
+model CommercialOrderLine {
+  id                String                  @id @default(cuid())
+  commercialOrderId String                  @map("commercial_order_id")
+  commercialOrder   CommercialOrder         @relation(fields: [commercialOrderId], references: [id], onDelete: Cascade)
+  orden             Int                     @default(0)
+  tipo              CommercialOrderLineTipo
+  referenciaId      String                  @map("referencia_id")
+  descripcion       String
+  cantidad          Int
+  precioUnitario    Decimal                 @map("precio_unitario") @db.Decimal(10, 2)
+  subtotal          Decimal                 @db.Decimal(10, 2)
+
+  @@index([commercialOrderId])
+  @@map("commercial_order_lines")
+}
+
+enum PaymentMetodo {
+  efectivo
+  tarjeta
+  transferencia
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  commercialOrderId String          @map("commercial_order_id")
+  commercialOrder   CommercialOrder @relation(fields: [commercialOrderId], references: [id], onDelete: Restrict)
+  monto             Decimal         @db.Decimal(10, 2)
+  fecha             DateTime        @db.Date
+  metodo            PaymentMetodo
+  referencia        String?
+  notas             String?
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@index([commercialOrderId])
+  @@map("payments")
+}
+
+model WorkshopSettings {
+  id                  String   @id @default("default")
+  nombreTaller        String   @map("nombre_taller")
+  cif                 String
+  direccion           String
+  horaApertura        String   @map("hora_apertura")
+  horaCierre          String   @map("hora_cierre")
+  bahias              Int      @default(6)
+  notifCitas          Boolean  @default(true) @map("notif_citas")
+  notifOrdenes        Boolean  @default(true) @map("notif_ordenes")
+  notifRecordatorios  Boolean  @default(true) @map("notif_recordatorios")
+  serieCotizacion     String   @map("serie_cotizacion")
+  serieFactura        String   @map("serie_factura")
+  ivaPorcentaje       Decimal  @default(21) @map("iva_porcentaje") @db.Decimal(5, 2)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("workshop_settings")
 }
 
 enum InventoryPartEstado {
@@ -172,6 +329,7 @@ model WorkOrder {
   fechaEstimada    DateTime                  @map("fecha_estimada") @db.Date
   totalEstimado    Decimal                   @default(0) @map("total_estimado") @db.Decimal(10, 2)
   ordenComercialId String?                   @map("orden_comercial_id")
+  commercialOrder  CommercialOrder?          @relation(fields: [ordenComercialId], references: [id], onDelete: SetNull)
   partsUsed        WorkOrderPart[]
   checklist        WorkOrderChecklistItem[]
   timeline         WorkOrderTimelineEntry[]

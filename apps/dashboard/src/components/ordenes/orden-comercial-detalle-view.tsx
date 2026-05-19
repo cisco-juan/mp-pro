@@ -13,8 +13,12 @@ interface OrdenComercialDetalleViewProps {
 }
 
 export function OrdenComercialDetalleView({ id }: OrdenComercialDetalleViewProps) {
-  const { getOrdenComercial } = useOrdenesComercialesStore();
+  const { getOrdenComercial, loading } = useOrdenesComercialesStore();
   const orden = getOrdenComercial(id);
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Cargando orden comercial…</p>;
+  }
 
   if (!orden) {
     notFound();

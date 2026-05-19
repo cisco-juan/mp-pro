@@ -16,11 +16,18 @@ const ROLES = [
     permisos: [
       'taller:write',
       'ordenes:write',
+      'ordenes:read',
       'pagos:write',
+      'pagos:read',
       'usuarios:write',
       'inventario:write',
+      'inventario:read',
       'clientes:write',
       'clientes:read',
+      'citas:write',
+      'citas:read',
+      'servicios:write',
+      'servicios:read',
     ],
   },
   {
@@ -33,7 +40,7 @@ const ROLES = [
     id: 'r3',
     nombre: 'Recepcionista',
     descripcion: 'Citas, clientes y cotizaciones',
-    permisos: ['citas:write', 'clientes:write', 'ordenes:write', 'pagos:read'],
+    permisos: ['citas:write', 'citas:read', 'clientes:write', 'ordenes:write', 'ordenes:read', 'pagos:read', 'servicios:read'],
   },
   {
     id: 'r4',
@@ -456,6 +463,218 @@ const WORK_ORDERS = [
   },
 ] as const;
 
+const SERVICES = [
+  {
+    id: 'sv1',
+    nombre: 'Cambio aceite y filtros',
+    descripcion: 'Aceite sintético 5W30 y filtros de aceite y aire',
+    precio: 89,
+    duracionMin: 60,
+    categoria: 'Mantenimiento',
+    activo: true,
+  },
+  {
+    id: 'sv2',
+    nombre: 'Revisión frenos',
+    descripcion: 'Inspección pastillas, discos y líquido de frenos',
+    precio: 45,
+    duracionMin: 45,
+    categoria: 'Frenos',
+    activo: true,
+  },
+  {
+    id: 'sv3',
+    nombre: 'Diagnóstico motor',
+    descripcion: 'Lectura OBD y diagnóstico completo del motor',
+    precio: 65,
+    duracionMin: 90,
+    categoria: 'Motor',
+    activo: true,
+  },
+  {
+    id: 'sv4',
+    nombre: 'ITV pre-revisión',
+    descripcion: 'Comprobación previa a la inspección técnica',
+    precio: 35,
+    duracionMin: 60,
+    categoria: 'Inspección',
+    activo: true,
+  },
+] as const;
+
+const APPOINTMENTS = [
+  {
+    id: 'ci1',
+    clientId: 'c1',
+    vehicleId: 'v2',
+    serviceId: 'sv2',
+    fecha: new Date('2026-05-19'),
+    hora: '09:00',
+    duracionMin: 60,
+    estado: 'confirmada' as const,
+  },
+  {
+    id: 'ci2',
+    clientId: 'c2',
+    vehicleId: 'v3',
+    serviceId: 'sv4',
+    fecha: new Date('2026-05-20'),
+    hora: '10:00',
+    duracionMin: 60,
+    estado: 'pendiente' as const,
+  },
+] as const;
+
+const COMMERCIAL_ORDERS = [
+  {
+    id: 'oc1',
+    numero: 'COT-2026-0089',
+    tipo: 'cotizacion' as const,
+    estado: 'enviada' as const,
+    clientId: 'c1',
+    vehicleId: 'v2',
+    fecha: new Date('2026-05-18'),
+    validezHasta: new Date('2026-06-18'),
+    subtotal: 179,
+    iva: 37.59,
+    total: 216.59,
+    workOrderId: 'o1',
+    lineas: [
+      {
+        orden: 0,
+        tipo: 'servicio' as const,
+        referenciaId: 'sv2',
+        descripcion: 'Revisión frenos',
+        cantidad: 1,
+        precioUnitario: 45,
+        subtotal: 45,
+      },
+      {
+        orden: 1,
+        tipo: 'pieza' as const,
+        referenciaId: 'p3',
+        descripcion: 'Pastillas freno delanteras',
+        cantidad: 1,
+        precioUnitario: 45,
+        subtotal: 45,
+      },
+      {
+        orden: 2,
+        tipo: 'pieza' as const,
+        referenciaId: 'p4',
+        descripcion: 'Discos freno delanteros (par)',
+        cantidad: 1,
+        precioUnitario: 89,
+        subtotal: 89,
+      },
+    ],
+  },
+  {
+    id: 'oc2',
+    numero: 'COT-2026-0090',
+    tipo: 'cotizacion' as const,
+    estado: 'aceptada' as const,
+    clientId: 'c2',
+    vehicleId: 'v3',
+    fecha: new Date('2026-05-17'),
+    validezHasta: new Date('2026-06-17'),
+    subtotal: 955,
+    iva: 200.55,
+    total: 1155.55,
+    workOrderId: 'o2',
+    lineas: [
+      {
+        orden: 0,
+        tipo: 'servicio' as const,
+        referenciaId: 'sv3',
+        descripcion: 'Diagnóstico motor',
+        cantidad: 1,
+        precioUnitario: 65,
+        subtotal: 65,
+      },
+      {
+        orden: 1,
+        tipo: 'pieza' as const,
+        referenciaId: 'p7',
+        descripcion: 'Turbocompresor OEM',
+        cantidad: 1,
+        precioUnitario: 890,
+        subtotal: 890,
+      },
+    ],
+  },
+  {
+    id: 'oc4',
+    numero: 'FAC-2026-0045',
+    tipo: 'factura' as const,
+    estado: 'pagada' as const,
+    clientId: 'c2',
+    vehicleId: 'v3',
+    fecha: new Date('2026-05-14'),
+    validezHasta: null,
+    subtotal: 62.5,
+    iva: 13.13,
+    total: 75.63,
+    workOrderId: 'o4',
+    lineas: [
+      {
+        orden: 0,
+        tipo: 'pieza' as const,
+        referenciaId: 'p1',
+        descripcion: 'Filtro de aceite',
+        cantidad: 1,
+        precioUnitario: 12.5,
+        subtotal: 12.5,
+      },
+      {
+        orden: 1,
+        tipo: 'pieza' as const,
+        referenciaId: 'p2',
+        descripcion: 'Filtro de aire',
+        cantidad: 1,
+        precioUnitario: 18,
+        subtotal: 18,
+      },
+      {
+        orden: 2,
+        tipo: 'pieza' as const,
+        referenciaId: 'p5',
+        descripcion: 'Aceite 5W30 5L',
+        cantidad: 1,
+        precioUnitario: 32,
+        subtotal: 32,
+      },
+    ],
+  },
+] as const;
+
+const PAYMENTS = [
+  {
+    id: 'pg1',
+    commercialOrderId: 'oc4',
+    monto: 75.63,
+    fecha: new Date('2026-05-15'),
+    metodo: 'transferencia' as const,
+    referencia: 'TRF-20260515-0045',
+  },
+] as const;
+
+const WORKSHOP_SETTINGS = {
+  id: 'default',
+  nombreTaller: 'Taller MP Pro',
+  cif: 'B12345678',
+  direccion: 'Calle Industria 42, 28001 Madrid',
+  horaApertura: '08:00',
+  horaCierre: '19:00',
+  bahias: 6,
+  notifCitas: true,
+  notifOrdenes: true,
+  notifRecordatorios: true,
+  serieCotizacion: 'COT-2026',
+  serieFactura: 'FAC-2026',
+  ivaPorcentaje: 21,
+} as const;
+
 async function main(): Promise<void> {
   const prisma = createPrismaClient();
   const passwordHash = await hashPassword(DEFAULT_PASSWORD);
@@ -531,6 +750,27 @@ async function main(): Promise<void> {
     });
   }
 
+  await prisma.workshopSettings.upsert({
+    where: { id: WORKSHOP_SETTINGS.id },
+    create: WORKSHOP_SETTINGS,
+    update: WORKSHOP_SETTINGS,
+  });
+
+  for (const service of SERVICES) {
+    await prisma.serviceCatalog.upsert({
+      where: { id: service.id },
+      create: service,
+      update: {
+        nombre: service.nombre,
+        descripcion: service.descripcion,
+        precio: service.precio,
+        duracionMin: service.duracionMin,
+        categoria: service.categoria,
+        activo: service.activo,
+      },
+    });
+  }
+
   for (const part of INVENTORY_PARTS) {
     await prisma.inventoryPart.upsert({
       where: { id: part.id },
@@ -548,13 +788,74 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const commercial of COMMERCIAL_ORDERS) {
+    const { lineas, workOrderId, ...commercialData } = commercial;
+    await prisma.commercialOrder.upsert({
+      where: { id: commercial.id },
+      create: {
+        ...commercialData,
+        lineas: { create: [...lineas] },
+      },
+      update: {
+        numero: commercial.numero,
+        tipo: commercial.tipo,
+        estado: commercial.estado,
+        clientId: commercial.clientId,
+        vehicleId: commercial.vehicleId,
+        fecha: commercial.fecha,
+        validezHasta: commercial.validezHasta,
+        subtotal: commercial.subtotal,
+        iva: commercial.iva,
+        total: commercial.total,
+      },
+    });
+
+    if (workOrderId) {
+      await prisma.workOrder.updateMany({
+        where: { id: workOrderId },
+        data: { ordenComercialId: commercial.id },
+      });
+    }
+  }
+
+  for (const appointment of APPOINTMENTS) {
+    await prisma.appointment.upsert({
+      where: { id: appointment.id },
+      create: appointment,
+      update: {
+        clientId: appointment.clientId,
+        vehicleId: appointment.vehicleId,
+        serviceId: appointment.serviceId,
+        fecha: appointment.fecha,
+        hora: appointment.hora,
+        duracionMin: appointment.duracionMin,
+        estado: appointment.estado,
+      },
+    });
+  }
+
+  for (const payment of PAYMENTS) {
+    await prisma.payment.upsert({
+      where: { id: payment.id },
+      create: payment,
+      update: {
+        commercialOrderId: payment.commercialOrderId,
+        monto: payment.monto,
+        fecha: payment.fecha,
+        metodo: payment.metodo,
+        referencia: payment.referencia,
+      },
+    });
+  }
+
   for (const order of WORK_ORDERS) {
-    const { parts, checklist, timeline, ...orderData } = order;
+    const { parts, checklist, timeline, ordenComercialId, ...orderData } = order;
 
     await prisma.workOrder.upsert({
       where: { id: order.id },
       create: {
         ...orderData,
+        ordenComercialId: ordenComercialId ?? null,
         partsUsed: {
           create: parts.map((part) => ({
             inventoryPartId: part.inventoryPartId,
@@ -588,7 +889,7 @@ async function main(): Promise<void> {
         fechaEntrada: order.fechaEntrada,
         fechaEstimada: order.fechaEstimada,
         totalEstimado: order.totalEstimado,
-        ordenComercialId: order.ordenComercialId,
+        ordenComercialId: ordenComercialId ?? null,
       },
     });
   }

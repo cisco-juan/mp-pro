@@ -4,49 +4,20 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import {
-  citas as initialCitas,
-  formValuesToCitaData,
-  generateCitaId,
-  MOCK_TODAY,
+  createCitaApi,
+  fetchCitas,
+  updateCitaApi,
+  updateCitaEstadoApi,
   type Cita,
-  type CitaEstado,
-  type CitaFormValues,
-} from '@/lib/mock-data';
-
-type State = {
-  citas: Cita[];
-};
-
-type Action =
-  | { type: 'ADD_CITA'; cita: Cita }
-  | { type: 'UPDATE_CITA'; id: string; data: Partial<Cita> }
-  | { type: 'UPDATE_CITA_ESTADO'; id: string; estado: CitaEstado };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'ADD_CITA':
-      return { citas: [...state.citas, action.cita] };
-    case 'UPDATE_CITA':
-      return {
-        citas: state.citas.map((c) =>
-          c.id === action.id ? { ...c, ...action.data } : c
-        ),
-      };
-    case 'UPDATE_CITA_ESTADO':
-      return {
-        citas: state.citas.map((c) =>
-          c.id === action.id ? { ...c, estado: action.estado } : c
-        ),
-      };
-    default:
-      return state;
-  }
-}
+} from '@/lib/api/citas-api';
+import { useAuth } from '@/lib/auth/auth-store';
+import type { CitaEstado, CitaFormValues } from '@/lib/mock-data';
 
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -70,11 +41,26 @@ function addDays(date: Date, days: number): Date {
   return d;
 }
 
+export function getDefaultWeekStart(): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return getMondayOfWeek(today);
+}
+
+export function formatSemanaDiaLabel(isoDate: string): string {
+  const d = new Date(`${isoDate}T12:00:00`);
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  return `${dayNames[d.getDay()]} ${d.getDate()}`;
+}
+
 export type CitasContextValue = {
   citas: Cita[];
-  createCita: (values: CitaFormValues) => Cita;
-  updateCita: (id: string, values: CitaFormValues) => boolean;
-  updateCitaEstado: (id: string, estado: CitaEstado) => boolean;
+  loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
+  createCita: (values: CitaFormValues) => Promise<Cita | null>;
+  updateCita: (id: string, values: CitaFormValues) => Promise<boolean>;
+  updateCitaEstado: (id: string, estado: CitaEstado) => Promise<boolean>;
   getCita: (id: string) => Cita | undefined;
   getCitasByCliente: (clienteId: string) => Cita[];
   getCitasByVehiculo: (vehiculoId: string) => Cita[];
@@ -87,116 +73,135 @@ export type CitasContextValue = {
 const CitasContext = createContext<CitasContextValue | null>(null);
 
 export function CitasProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { citas: initialCitas });
+  const { isAuthenticated } = useAuth();
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getCita = useCallback(
-    (id: string) => state.citas.find((c) => c.id === id),
-    [state.citas]
-  );
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) {
+      setCitas([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchCitas();
+      setCitas(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar citas');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const getCita = useCallback((id: string) => citas.find((c) => c.id === id), [citas]);
 
   const getCitasByCliente = useCallback(
     (clienteId: string) =>
-      state.citas
+      citas
         .filter((c) => c.clienteId === clienteId)
-        .sort((a, b) => `${b.fecha}${b.hora}`.localeCompare(`${a.fecha}${a.hora}`)),
-    [state.citas]
+        .sort((a, b) => `${a.fecha}${a.hora}`.localeCompare(`${b.fecha}${b.hora}`)),
+    [citas],
   );
 
   const getCitasByVehiculo = useCallback(
-    (vehiculoId: string) =>
-      state.citas
-        .filter((c) => c.vehiculoId === vehiculoId)
-        .sort((a, b) => `${b.fecha}${b.hora}`.localeCompare(`${a.fecha}${a.hora}`)),
-    [state.citas]
+    (vehiculoId: string) => citas.filter((c) => c.vehiculoId === vehiculoId),
+    [citas],
   );
 
-  const getCitasHoy = useCallback(
-    () =>
-      state.citas
-        .filter((c) => c.fecha === MOCK_TODAY)
-        .sort((a, b) => a.hora.localeCompare(b.hora)),
-    [state.citas]
-  );
+  const getCitasHoy = useCallback(() => {
+    const hoy = toIsoDate(new Date());
+    return citas.filter((c) => c.fecha === hoy);
+  }, [citas]);
 
   const getCitasPorSemana = useCallback(
-    (weekStart: Date): Record<string, Cita[]> => {
-      const monday = getMondayOfWeek(weekStart);
-      const result: Record<string, Cita[]> = {};
+    (weekStart: Date) => {
+      const start = getMondayOfWeek(weekStart);
+      const end = addDays(start, 6);
+      const startIso = toIsoDate(start);
+      const endIso = toIsoDate(end);
 
+      const byDay: Record<string, Cita[]> = {};
       for (let i = 0; i < 7; i += 1) {
-        const day = addDays(monday, i);
-        const iso = toIsoDate(day);
-        result[iso] = state.citas
-          .filter((c) => c.fecha === iso)
-          .sort((a, b) => a.hora.localeCompare(b.hora));
+        byDay[toIsoDate(addDays(start, i))] = [];
       }
 
-      return result;
+      for (const cita of citas) {
+        if (cita.fecha >= startIso && cita.fecha <= endIso) {
+          byDay[cita.fecha]?.push(cita);
+        }
+      }
+
+      return byDay;
     },
-    [state.citas]
+    [citas],
   );
 
   const getCitasCountSemanaActual = useCallback(() => {
-    const monday = getMondayOfWeek(new Date(MOCK_TODAY));
-    const sunday = addDays(monday, 6);
-    const mondayIso = toIsoDate(monday);
-    const sundayIso = toIsoDate(sunday);
-    return state.citas.filter((c) => c.fecha >= mondayIso && c.fecha <= sundayIso).length;
-  }, [state.citas]);
+    const start = getMondayOfWeek(new Date());
+    const byDay = getCitasPorSemana(start);
+    return Object.values(byDay).reduce((sum, day) => sum + day.length, 0);
+  }, [getCitasPorSemana]);
 
   const getCitasPorDiaChart = useCallback(
     (weekStart: Date) => {
-      const porSemana = getCitasPorSemana(weekStart);
-      const monday = getMondayOfWeek(weekStart);
-      const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-      return dayLabels.map((dia, i) => {
-        const iso = toIsoDate(addDays(monday, i));
-        return { dia, citas: (porSemana[iso] ?? []).length };
-      });
+      const byDay = getCitasPorSemana(weekStart);
+      const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      const start = getMondayOfWeek(weekStart);
+      return labels.map((dia, index) => ({
+        dia,
+        citas: byDay[toIsoDate(addDays(start, index))]?.length ?? 0,
+      }));
     },
-    [getCitasPorSemana]
+    [getCitasPorSemana],
   );
 
-  const createCita = useCallback(
-    (values: CitaFormValues): Cita => {
-      const data = formValuesToCitaData(values);
-      const cita: Cita = {
-        id: generateCitaId(state.citas),
-        ...data,
-        estado: 'pendiente',
-      };
-      dispatch({ type: 'ADD_CITA', cita });
+  const createCita = useCallback(async (values: CitaFormValues): Promise<Cita | null> => {
+    try {
+      const cita = await createCitaApi(values);
+      setCitas((prev) => [...prev, cita]);
       return cita;
-    },
-    [state.citas]
-  );
+    } catch {
+      return null;
+    }
+  }, []);
 
   const updateCita = useCallback(
-    (id: string, values: CitaFormValues): boolean => {
-      const existing = state.citas.find((c) => c.id === id);
-      if (!existing) return false;
-
-      const data = formValuesToCitaData(values);
-      dispatch({ type: 'UPDATE_CITA', id, data });
-      return true;
+    async (id: string, values: CitaFormValues): Promise<boolean> => {
+      try {
+        const updated = await updateCitaApi(id, values);
+        setCitas((prev) => prev.map((c) => (c.id === id ? updated : c)));
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [state.citas]
+    [],
   );
 
-  const updateCitaEstado = useCallback(
-    (id: string, estado: CitaEstado): boolean => {
-      const existing = state.citas.find((c) => c.id === id);
-      if (!existing) return false;
-      dispatch({ type: 'UPDATE_CITA_ESTADO', id, estado });
+  const updateCitaEstado = useCallback(async (id: string, estado: CitaEstado): Promise<boolean> => {
+    try {
+      const updated = await updateCitaEstadoApi(id, estado);
+      setCitas((prev) => prev.map((c) => (c.id === id ? updated : c)));
       return true;
-    },
-    [state.citas]
-  );
+    } catch {
+      return false;
+    }
+  }, []);
 
   const value = useMemo(
     () => ({
-      citas: state.citas,
+      citas,
+      loading,
+      error,
+      reload,
       createCita,
       updateCita,
       updateCitaEstado,
@@ -209,7 +214,10 @@ export function CitasProvider({ children }: { children: ReactNode }) {
       getCitasPorDiaChart,
     }),
     [
-      state.citas,
+      citas,
+      loading,
+      error,
+      reload,
       createCita,
       updateCita,
       updateCitaEstado,
@@ -220,7 +228,7 @@ export function CitasProvider({ children }: { children: ReactNode }) {
       getCitasPorSemana,
       getCitasCountSemanaActual,
       getCitasPorDiaChart,
-    ]
+    ],
   );
 
   return <CitasContext.Provider value={value}>{children}</CitasContext.Provider>;
@@ -232,15 +240,4 @@ export function useCitasStore() {
     throw new Error('useCitasStore debe usarse dentro de CitasProvider');
   }
   return ctx;
-}
-
-export function getDefaultWeekStart(): Date {
-  return getMondayOfWeek(new Date(MOCK_TODAY));
-}
-
-export function formatSemanaDiaLabel(isoDate: string): string {
-  const date = new Date(`${isoDate}T12:00:00`);
-  const labels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const day = labels[date.getDay()];
-  return `${day} ${date.getDate()}`;
 }
