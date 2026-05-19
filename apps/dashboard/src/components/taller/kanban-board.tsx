@@ -11,10 +11,10 @@ import {
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   getClienteNombre,
-  getVehiculoLabel,
   getUsuarioById,
   type OrdenEstado,
 } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { formatDisplayDate } from '@org/utils-shared';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +57,8 @@ function getChecklistProgress(checklist: { completado: boolean }[]) {
 }
 
 export function KanbanBoard() {
+  const { getVehiculoLabel } = useClientesStore();
+
   return (
     <div className="max-w-full overflow-x-auto pb-2">
       <div className="flex snap-x snap-mandatory gap-4 md:grid md:grid-cols-2 md:snap-none xl:grid-cols-4">

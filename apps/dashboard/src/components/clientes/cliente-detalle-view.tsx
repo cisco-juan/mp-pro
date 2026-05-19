@@ -273,7 +273,7 @@ function ClienteDetalleContent({
         </TabsList>
 
         <TabsContent value="vehiculos" className="mt-4">
-          <ClienteVehiculosTable data={vehiculosCliente} />
+          <ClienteVehiculosTable clienteId={id} data={vehiculosCliente} />
         </TabsContent>
 
         <TabsContent value="historial" className="mt-4">

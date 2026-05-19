@@ -7,6 +7,8 @@ export type OrdenEstado =
   | 'completado';
 export type OrdenTrabajoTipo = 'mantenimiento' | 'reparacion';
 export type MantenimientoUrgencia = 'ok' | 'proximo' | 'vencido';
+export type VehiculoEstado = 'activo' | 'inactivo';
+export type GarantiaEstado = 'vigente' | 'vencida' | 'anulada';
 export type OrdenComercialTipo = 'cotizacion' | 'factura';
 export type CotizacionEstado = 'borrador' | 'enviada' | 'aceptada' | 'rechazada' | 'convertida';
 export type FacturaEstado = 'borrador' | 'emitida' | 'pagada' | 'vencida' | 'anulada';
@@ -166,6 +168,89 @@ export interface Vehiculo {
   kilometraje: number;
   proximoMantenimiento: string;
   urgencia: MantenimientoUrgencia;
+  estado: VehiculoEstado;
+}
+
+export interface VehiculoFormValues {
+  clienteId: string;
+  matricula: string;
+  marca: string;
+  modelo: string;
+  anio: string;
+  color: string;
+  kilometraje: string;
+  proximoMantenimiento: string;
+}
+
+export const emptyVehiculoFormValues: VehiculoFormValues = {
+  clienteId: '',
+  matricula: '',
+  marca: '',
+  modelo: '',
+  anio: '',
+  color: '',
+  kilometraje: '',
+  proximoMantenimiento: '',
+};
+
+export function vehiculoToFormValues(vehiculo: Vehiculo): VehiculoFormValues {
+  return {
+    clienteId: vehiculo.clienteId,
+    matricula: vehiculo.matricula,
+    marca: vehiculo.marca,
+    modelo: vehiculo.modelo,
+    anio: String(vehiculo.anio),
+    color: vehiculo.color,
+    kilometraje: String(vehiculo.kilometraje),
+    proximoMantenimiento: vehiculo.proximoMantenimiento,
+  };
+}
+
+export function formValuesToVehiculoData(
+  values: VehiculoFormValues
+): Omit<Vehiculo, 'id' | 'urgencia' | 'estado'> {
+  return {
+    clienteId: values.clienteId,
+    matricula: values.matricula.trim().toUpperCase(),
+    marca: values.marca.trim(),
+    modelo: values.modelo.trim(),
+    anio: parseInt(values.anio, 10) || new Date().getFullYear(),
+    color: values.color.trim() || '—',
+    kilometraje: parseInt(values.kilometraje.replace(/\D/g, ''), 10) || 0,
+    proximoMantenimiento: values.proximoMantenimiento,
+  };
+}
+
+export function computeUrgencia(proximoMantenimiento: string): MantenimientoUrgencia {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fecha = new Date(proximoMantenimiento + 'T00:00:00');
+  const diffMs = fecha.getTime() - hoy.getTime();
+  const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDias < 0) return 'vencido';
+  if (diffDias <= 30) return 'proximo';
+  return 'ok';
+}
+
+export interface Garantia {
+  id: string;
+  vehiculoId: string;
+  concepto: string;
+  proveedor?: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: GarantiaEstado;
+  notas?: string;
+}
+
+export interface PiezaUsadaVehiculo {
+  piezaId: string;
+  piezaNombre: string;
+  cantidad: number;
+  precioUnitario: number;
+  ordenTrabajoId: string;
+  ordenNumero: string;
+  fechaEntrada: string;
 }
 
 export interface Cita {
@@ -702,6 +787,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 85400,
     proximoMantenimiento: '2026-06-01',
     urgencia: 'proximo',
+    estado: 'activo',
   },
   {
     id: 'v2',
@@ -714,6 +800,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 120300,
     proximoMantenimiento: '2026-05-25',
     urgencia: 'vencido',
+    estado: 'activo',
   },
   {
     id: 'v3',
@@ -726,6 +813,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 45200,
     proximoMantenimiento: '2026-08-15',
     urgencia: 'ok',
+    estado: 'activo',
   },
   {
     id: 'v4',
@@ -738,6 +826,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 156000,
     proximoMantenimiento: '2026-06-10',
     urgencia: 'ok',
+    estado: 'activo',
   },
   {
     id: 'v5',
@@ -750,6 +839,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 67800,
     proximoMantenimiento: '2026-05-22',
     urgencia: 'proximo',
+    estado: 'activo',
   },
   {
     id: 'v6',
@@ -762,6 +852,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 98500,
     proximoMantenimiento: '2026-07-01',
     urgencia: 'ok',
+    estado: 'activo',
   },
   {
     id: 'v7',
@@ -774,6 +865,7 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 22100,
     proximoMantenimiento: '2026-09-01',
     urgencia: 'ok',
+    estado: 'activo',
   },
   {
     id: 'v8',
@@ -786,8 +878,74 @@ export const vehiculos: Vehiculo[] = [
     kilometraje: 198400,
     proximoMantenimiento: '2026-05-20',
     urgencia: 'vencido',
+    estado: 'inactivo',
   },
 ];
+
+export const garantias: Garantia[] = [
+  {
+    id: 'g1',
+    vehiculoId: 'v1',
+    concepto: 'Garantía de fábrica motor',
+    proveedor: 'Mercedes-Benz',
+    fechaInicio: '2022-03-01',
+    fechaFin: '2027-03-01',
+    estado: 'vigente',
+  },
+  {
+    id: 'g2',
+    vehiculoId: 'v2',
+    concepto: 'Turbo reemplazado',
+    proveedor: 'Taller oficial Ford',
+    fechaInicio: '2026-01-15',
+    fechaFin: '2027-01-15',
+    estado: 'vigente',
+    notas: 'Pieza OEM con 12 meses de garantía',
+  },
+  {
+    id: 'g3',
+    vehiculoId: 'v4',
+    concepto: 'Batería auxiliar',
+    proveedor: 'AutoEléctrica Sur',
+    fechaInicio: '2025-06-01',
+    fechaFin: '2026-06-01',
+    estado: 'vencida',
+  },
+  {
+    id: 'g4',
+    vehiculoId: 'v5',
+    concepto: 'Embrague completo',
+    proveedor: 'Iveco Parts',
+    fechaInicio: '2025-11-10',
+    fechaFin: '2026-11-10',
+    estado: 'vigente',
+  },
+  {
+    id: 'g5',
+    vehiculoId: 'v7',
+    concepto: 'Pintura carrocería',
+    proveedor: 'Carrocerías Pro',
+    fechaInicio: '2024-08-01',
+    fechaFin: '2025-08-01',
+    estado: 'vencida',
+  },
+  {
+    id: 'g6',
+    vehiculoId: 'v8',
+    concepto: 'Reparación caja de cambios',
+    proveedor: 'Mercedes-Benz',
+    fechaInicio: '2025-12-01',
+    fechaFin: '2026-12-01',
+    estado: 'anulada',
+    notas: 'Anulada por incumplimiento de mantenimiento',
+  },
+];
+
+export const garantiaEstadoLabels: Record<GarantiaEstado, string> = {
+  vigente: 'Vigente',
+  vencida: 'Vencida',
+  anulada: 'Anulada',
+};
 
 export const citas: Cita[] = [
   {
@@ -1378,6 +1536,41 @@ export function getVehiculoById(id: string): Vehiculo | undefined {
 
 export function getVehiculosByClienteId(clienteId: string): Vehiculo[] {
   return vehiculos.filter((v) => v.clienteId === clienteId);
+}
+
+export function getCitasByVehiculoId(vehiculoId: string): Cita[] {
+  return citas.filter((c) => c.vehiculoId === vehiculoId);
+}
+
+export function getOrdenesTrabajoByVehiculoId(vehiculoId: string): OrdenTrabajo[] {
+  return ordenesTrabajo.filter((o) => o.vehiculoId === vehiculoId);
+}
+
+export function getOrdenesComercialesByVehiculoId(vehiculoId: string): OrdenComercial[] {
+  return ordenesComerciales.filter((o) => o.vehiculoId === vehiculoId);
+}
+
+export function getGarantiasByVehiculoId(vehiculoId: string): Garantia[] {
+  return garantias.filter((g) => g.vehiculoId === vehiculoId);
+}
+
+export function getPiezasUsadasByVehiculoId(vehiculoId: string): PiezaUsadaVehiculo[] {
+  const ordenes = getOrdenesTrabajoByVehiculoId(vehiculoId);
+  const result: PiezaUsadaVehiculo[] = [];
+  for (const orden of ordenes) {
+    for (const pu of orden.piezasUsadas) {
+      result.push({
+        piezaId: pu.piezaId,
+        piezaNombre: getPiezaNombre(pu.piezaId),
+        cantidad: pu.cantidad,
+        precioUnitario: pu.precioUnitario,
+        ordenTrabajoId: orden.id,
+        ordenNumero: orden.numero,
+        fechaEntrada: orden.fechaEntrada,
+      });
+    }
+  }
+  return result;
 }
 
 export function getCitasByClienteId(clienteId: string): Cita[] {

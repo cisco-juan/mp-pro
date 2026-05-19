@@ -32,14 +32,15 @@ import {
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   getClienteNombre,
-  getVehiculoLabel,
   getUsuarioById,
   type OrdenEstado,
   type OrdenTrabajoTipo,
 } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function OrdenesTrabajoTable() {
+  const { getVehiculoLabel } = useClientesStore();
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');

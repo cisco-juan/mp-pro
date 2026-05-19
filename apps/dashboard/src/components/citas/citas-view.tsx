@@ -21,8 +21,8 @@ import {
   citaEstadoLabels,
   getClienteNombre,
   getServicioNombre,
-  getVehiculoLabel,
 } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { formatDisplayDate } from '@org/utils-shared';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +39,7 @@ const citasPorDiaSemana: Record<string, typeof citas> = {
 };
 
 export function CitasView() {
+  const { getVehiculoLabel } = useClientesStore();
   const [vista, setVista] = useState<'semana' | 'lista'>('semana');
 
   const citasOrdenadas = useMemo(

@@ -1,15 +1,17 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type {
-  CitaEstado,
-  CotizacionEstado,
-  FacturaEstado,
-  MantenimientoUrgencia,
-  OrdenComercialEstado,
-  OrdenComercialTipo,
-  OrdenEstado,
-  OrdenTrabajoTipo,
-  PagoMetodo,
+import {
+  garantiaEstadoLabels,
+  type CitaEstado,
+  type CotizacionEstado,
+  type FacturaEstado,
+  type GarantiaEstado,
+  type MantenimientoUrgencia,
+  type OrdenComercialEstado,
+  type OrdenComercialTipo,
+  type OrdenEstado,
+  type OrdenTrabajoTipo,
+  type PagoMetodo,
 } from '@/lib/mock-data';
 
 const citaVariants: Record<CitaEstado, string> = {
@@ -189,6 +191,39 @@ export function ClienteEstadoBadge({
 }: {
   activo: boolean;
 }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        activo
+          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100'
+          : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
+      )}
+    >
+      {activo ? 'Activo' : 'Inactivo'}
+    </Badge>
+  );
+}
+
+const garantiaEstadoVariants: Record<GarantiaEstado, string> = {
+  vigente: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
+  vencida: 'bg-red-100 text-red-800 hover:bg-red-100',
+  anulada: 'bg-slate-100 text-slate-600 hover:bg-slate-100',
+};
+
+export function GarantiaEstadoBadge({
+  estado,
+}: {
+  estado: GarantiaEstado;
+}) {
+  return (
+    <Badge variant="secondary" className={cn(garantiaEstadoVariants[estado])}>
+      {garantiaEstadoLabels[estado]}
+    </Badge>
+  );
+}
+
+export function VehiculoEstadoBadge({ activo }: { activo: boolean }) {
   return (
     <Badge
       variant="secondary"

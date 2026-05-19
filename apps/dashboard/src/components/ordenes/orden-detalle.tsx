@@ -21,10 +21,10 @@ import {
   getOrdenComercialEstadoLabel,
   getOrdenTrabajoById,
   getTotalPagado,
-  getVehiculoLabel,
   ordenComercialTipoLabels,
   type OrdenComercial,
 } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 interface OrdenDetalleProps {
@@ -32,6 +32,7 @@ interface OrdenDetalleProps {
 }
 
 export function OrdenDetalle({ orden }: OrdenDetalleProps) {
+  const { getVehiculoLabel } = useClientesStore();
   const ot = orden.ordenTrabajoId ? getOrdenTrabajoById(orden.ordenTrabajoId) : undefined;
   const totalPagado = getTotalPagado(orden.id);
   const pendiente = orden.total - totalPagado;
