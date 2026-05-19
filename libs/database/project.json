@@ -12,6 +12,17 @@
         "command": "npx prisma generate"
       }
     },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "commands": [
+          "npx tsc --build tsconfig.lib.json",
+          "node -e \"require('fs').mkdirSync('dist', {recursive:true}); require('fs').writeFileSync('dist/index.js', \\\"export * from './src/index.js';\\\\n\\\")\""
+        ]
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
     "prisma-migrate": {
       "executor": "nx:run-commands",
       "options": {
