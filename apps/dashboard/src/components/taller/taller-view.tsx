@@ -3,11 +3,21 @@
 import { useState } from 'react';
 import { LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTallerStore } from '@/lib/taller/taller-store';
 import { KanbanBoard } from './kanban-board';
 import { OrdenesTrabajoTable } from './ordenes-trabajo-table';
 
 export function TallerView() {
   const [vista, setVista] = useState<'kanban' | 'tabla'>('kanban');
+  const { loading, error } = useTallerStore();
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Cargando órdenes de trabajo…</p>;
+  }
+
+  if (error) {
+    return <p className="text-sm text-destructive">{error}</p>;
+  }
 
   return (
     <div className="flex flex-col gap-4">

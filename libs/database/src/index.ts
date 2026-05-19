@@ -12,5 +12,11 @@ export type {
   User,
   RefreshToken,
   Vehicle,
+  WorkOrder,
+  WorkOrderChecklistItem,
+  WorkOrderPart,
+  WorkOrderTimelineEntry,
+  WorkOrderEstado,
+  WorkOrderTipo,
 } from '../generated/prisma/client.js';
 export type { Prisma } from '../generated/prisma/client.js';

@@ -95,3 +95,36 @@ export type Pieza = {
   ubicacion?: string;
   estado?: 'activo' | 'inactivo';
 };
+
+export type OrdenEstado =
+  | 'pendiente'
+  | 'en_progreso'
+  | 'esperando_piezas'
+  | 'completado';
+
+export type OrdenTrabajoTipo = 'mantenimiento' | 'reparacion';
+
+export type PiezaUsada = {
+  lineId?: string;
+  piezaId: string;
+  cantidad: number;
+  precioUnitario: number;
+};
+
+export type OrdenTrabajo = {
+  id: string;
+  numero: string;
+  tipo: OrdenTrabajoTipo;
+  clienteId: string;
+  vehiculoId: string;
+  usuarioId: string;
+  estado: OrdenEstado;
+  descripcion: string;
+  fechaEntrada: string;
+  fechaEstimada: string;
+  totalEstimado: number;
+  piezasUsadas: PiezaUsada[];
+  ordenComercialId?: string;
+  checklist: { item: string; completado: boolean }[];
+  timeline: { fecha: string; estado: OrdenEstado; nota: string }[];
+};

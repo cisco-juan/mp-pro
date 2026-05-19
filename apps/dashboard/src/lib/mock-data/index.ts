@@ -326,6 +326,7 @@ export function generateCitaId(existing: { id: string }[]): string {
 }
 
 export interface PiezaUsada {
+  lineId?: string;
   piezaId: string;
   cantidad: number;
   precioUnitario: number;

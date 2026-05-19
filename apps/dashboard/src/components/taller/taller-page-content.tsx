@@ -23,8 +23,12 @@ export function TallerPageContent() {
   const [openCreate, setOpenCreate] = useState(false);
   const count = getOrdenesAbiertasCount();
 
-  function handleCreate(values: OrdenTrabajoFormValues) {
-    const orden = createOrdenTrabajo(values);
+  async function handleCreate(values: OrdenTrabajoFormValues) {
+    const orden = await createOrdenTrabajo(values);
+    if (!orden) {
+      toast.error('No se pudo crear la orden de trabajo');
+      return;
+    }
     toast.success('Orden de trabajo creada');
     setOpenCreate(false);
     router.push(`/taller/${orden.id}`);

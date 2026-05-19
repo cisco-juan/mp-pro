@@ -229,10 +229,13 @@ export function KanbanBoard() {
     const orden = getOrdenTrabajo(ordenId);
     if (!orden || orden.estado === newEstado) return;
 
-    const ok = updateOrdenEstado(ordenId, newEstado);
-    if (ok) {
-      toast.success(`OT movida a ${ordenEstadoLabels[newEstado].toLowerCase()}`);
-    }
+    void updateOrdenEstado(ordenId, newEstado).then((ok) => {
+      if (ok) {
+        toast.success(`OT movida a ${ordenEstadoLabels[newEstado].toLowerCase()}`);
+      } else {
+        toast.error('No se pudo actualizar el estado');
+      }
+    });
   }
 
   function handleDragCancel() {
