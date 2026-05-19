@@ -42,7 +42,7 @@ import type { PiezaFormValues } from '@/lib/mock-data';
 import { piezaCategorias as defaultCategorias } from '@/lib/mock-data';
 
 export function InventarioTable() {
-  const { piezas, categorias, createPieza, adjustStock } = useInventarioStore();
+  const { piezas, categorias, loading, createPieza, adjustStock } = useInventarioStore();
   const [search, setSearch] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [open, setOpen] = useState(false);
@@ -76,8 +76,8 @@ export function InventarioTable() {
     resetKey,
   });
 
-  function handleCreate() {
-    const pieza = createPieza(form);
+  async function handleCreate() {
+    const pieza = await createPieza(form);
     if (!pieza) {
       toast.error('No se pudo registrar la pieza', {
         description: 'Revisa los campos obligatorios y que el código no exista.',
@@ -89,14 +89,15 @@ export function InventarioTable() {
     setOpen(false);
   }
 
-  function handleAdjustStock() {
+  async function handleAdjustStock() {
     if (!stockTarget) return;
     const delta = parseInt(stockDelta, 10);
     if (!delta) {
       toast.error('Indica una cantidad válida');
       return;
     }
-    if (!adjustStock(stockTarget.id, delta)) {
+    const ok = await adjustStock(stockTarget.id, delta);
+    if (!ok) {
       toast.error('No se pudo ajustar el stock');
       return;
     }
@@ -255,7 +256,13 @@ export function InventarioTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  Cargando inventario…
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No se encontraron piezas

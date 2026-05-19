@@ -117,3 +117,25 @@ model Vehicle {
   @@index([clientId])
   @@map("vehicles")
 }
+
+enum InventoryPartEstado {
+  activo
+  inactivo
+}
+
+model InventoryPart {
+  id             String              @id @default(cuid())
+  codigo         String              @unique
+  nombre         String
+  categoria      String
+  stock          Int                 @default(0)
+  stockMinimo    Int                 @default(0) @map("stock_minimo")
+  precioUnitario Decimal             @map("precio_unitario") @db.Decimal(10, 2)
+  ubicacion      String?
+  estado         InventoryPartEstado @default(activo)
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  @@index([categoria])
+  @@map("inventory_parts")
+}

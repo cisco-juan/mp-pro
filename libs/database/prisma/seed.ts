@@ -191,6 +191,119 @@ const VEHICLES = [
   },
 ] as const;
 
+const INVENTORY_PARTS = [
+  {
+    id: 'p1',
+    codigo: 'FLT-OIL-001',
+    nombre: 'Filtro de aceite',
+    categoria: 'Filtros',
+    stock: 24,
+    stockMinimo: 10,
+    precioUnitario: 12.5,
+    ubicacion: 'A-01',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p2',
+    codigo: 'FLT-AIR-002',
+    nombre: 'Filtro de aire',
+    categoria: 'Filtros',
+    stock: 18,
+    stockMinimo: 8,
+    precioUnitario: 18.0,
+    ubicacion: 'A-02',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p3',
+    codigo: 'BRK-PAD-F',
+    nombre: 'Pastillas freno delanteras',
+    categoria: 'Frenos',
+    stock: 6,
+    stockMinimo: 4,
+    precioUnitario: 45.0,
+    ubicacion: 'B-03',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p4',
+    codigo: 'BRK-DISC-F',
+    nombre: 'Discos freno delanteros (par)',
+    categoria: 'Frenos',
+    stock: 4,
+    stockMinimo: 2,
+    precioUnitario: 89.0,
+    ubicacion: 'B-04',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p5',
+    codigo: 'OIL-5W30-5L',
+    nombre: 'Aceite 5W30 5L',
+    categoria: 'Lubricantes',
+    stock: 15,
+    stockMinimo: 6,
+    precioUnitario: 32.0,
+    ubicacion: 'C-01',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p6',
+    codigo: 'BAT-12V-74AH',
+    nombre: 'Batería 12V 74Ah',
+    categoria: 'Eléctrico',
+    stock: 3,
+    stockMinimo: 2,
+    precioUnitario: 125.0,
+    ubicacion: 'D-01',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p7',
+    codigo: 'TUR-OEM-001',
+    nombre: 'Turbocompresor OEM',
+    categoria: 'Motor',
+    stock: 0,
+    stockMinimo: 1,
+    precioUnitario: 890.0,
+    ubicacion: 'E-02',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p8',
+    codigo: 'KIT-DIST-001',
+    nombre: 'Kit distribución completo',
+    categoria: 'Motor',
+    stock: 2,
+    stockMinimo: 2,
+    precioUnitario: 245.0,
+    ubicacion: 'E-01',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p9',
+    codigo: 'SPK-PLG-004',
+    nombre: 'Bujías (juego 4)',
+    categoria: 'Motor',
+    stock: 8,
+    stockMinimo: 4,
+    precioUnitario: 28.0,
+    ubicacion: 'E-03',
+    estado: 'activo' as const,
+  },
+  {
+    id: 'p10',
+    codigo: 'MED-UNIT-001',
+    nombre: 'Unidad multimedia Android',
+    categoria: 'Accesorios',
+    stock: 5,
+    stockMinimo: 2,
+    precioUnitario: 199.0,
+    ubicacion: 'F-01',
+    estado: 'activo' as const,
+  },
+] as const;
+
 async function main(): Promise<void> {
   const prisma = createPrismaClient();
   const passwordHash = await hashPassword(DEFAULT_PASSWORD);
@@ -262,6 +375,23 @@ async function main(): Promise<void> {
         kilometraje: vehicle.kilometraje,
         proximoMantenimiento: vehicle.proximoMantenimiento,
         estado: vehicle.estado,
+      },
+    });
+  }
+
+  for (const part of INVENTORY_PARTS) {
+    await prisma.inventoryPart.upsert({
+      where: { id: part.id },
+      create: part,
+      update: {
+        codigo: part.codigo,
+        nombre: part.nombre,
+        categoria: part.categoria,
+        stock: part.stock,
+        stockMinimo: part.stockMinimo,
+        precioUnitario: part.precioUnitario,
+        ubicacion: part.ubicacion,
+        estado: part.estado,
       },
     });
   }
