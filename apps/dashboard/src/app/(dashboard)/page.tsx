@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  Calendar,
   Euro,
   Package,
   Wrench,
@@ -10,6 +9,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppointmentsChart } from '@/components/dashboard/appointments-chart';
+import { CitasHoyStat } from '@/components/citas/citas-hoy-stat';
+import { ProximasCitasCard } from '@/components/citas/proximas-citas-card';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,26 +22,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  actividadReciente,
-  citas,
-  dashboardStats,
-  getClienteNombre,
-  getServicioNombre,
-  citaEstadoLabels,
-} from '@/lib/mock-data';
-import { CitaEstadoBadge } from '@/components/shared/status-badge';
-import { formatDisplayDate } from '@org/utils-shared';
+import { actividadReciente, dashboardStats } from '@/lib/mock-data';
 
 export const metadata = {
   title: 'Dashboard',
 };
 
 export default function DashboardPage() {
-  const proximasCitas = citas
-    .filter((c) => c.estado !== 'completada' && c.estado !== 'cancelada')
-    .slice(0, 5);
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -57,12 +45,7 @@ export default function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Citas hoy"
-          value={String(dashboardStats.citasHoy)}
-          trend={dashboardStats.citasHoyTrend}
-          icon={Calendar}
-        />
+        <CitasHoyStat />
         <StatCard
           title="OTs abiertas"
           value={String(dashboardStats.otsAbiertas)}
@@ -89,36 +72,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <AppointmentsChart />
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximas citas</CardTitle>
-            <CardDescription>Agenda de hoy y próximos días</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {proximasCitas.map((cita) => (
-              <div
-                key={cita.id}
-                className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm font-medium">{cita.hora}</span>
-                  <CitaEstadoBadge
-                    estado={cita.estado}
-                    label={citaEstadoLabels[cita.estado]}
-                  />
-                </div>
-                <p className="text-sm font-medium">{getServicioNombre(cita.servicioId)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {getClienteNombre(cita.clienteId)} · {formatDisplayDate(cita.fecha)}
-                </p>
-              </div>
-            ))}
-            <Button variant="outline" className="mt-2" asChild>
-              <Link href="/citas">Ver todas las citas</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <ProximasCitasCard />
       </div>
 
       <Card>

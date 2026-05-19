@@ -39,9 +39,9 @@ import {
 } from '@/components/shared/status-badge';
 import { VehiculoEditSheet } from '@/components/vehiculos/vehiculo-edit-sheet';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useCitasStore } from '@/lib/citas/citas-store';
 import {
   citaEstadoLabels,
-  getCitasByVehiculoId,
   getGarantiasByVehiculoId,
   getOrdenComercialEstadoLabel,
   getOrdenesComercialesByVehiculoId,
@@ -93,7 +93,8 @@ function VehiculoDetalleContent({
   toggleVehiculoEstado: ReturnType<typeof useClientesStore>['toggleVehiculoEstado'];
 }) {
   const cliente = getCliente(vehiculo.clienteId);
-  const citas = getCitasByVehiculoId(id);
+  const { getCitasByVehiculo } = useCitasStore();
+  const citas = getCitasByVehiculo(id);
   const ordenesTrabajo = getOrdenesTrabajoByVehiculoId(id);
   const mantenimientos = ordenesTrabajo.filter((o) => o.tipo === 'mantenimiento');
   const reparaciones = ordenesTrabajo.filter((o) => o.tipo === 'reparacion');
@@ -246,9 +247,10 @@ function VehiculoDetalleContent({
                 items={citas}
                 emptyMessage="Sin citas registradas para este vehículo"
                 renderItem={(c) => (
-                  <div
+                  <Link
                     key={c.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                    href={`/citas/${c.id}`}
+                    className="flex items-center justify-between rounded-lg border border-border p-3 text-sm transition-colors hover:bg-muted/50"
                   >
                     <div>
                       <p className="font-medium">{getServicioNombre(c.servicioId)}</p>
@@ -257,7 +259,7 @@ function VehiculoDetalleContent({
                       </p>
                     </div>
                     <CitaEstadoBadge estado={c.estado} label={citaEstadoLabels[c.estado]} />
-                  </div>
+                  </Link>
                 )}
               />
             </CardContent>

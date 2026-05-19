@@ -50,7 +50,6 @@ import {
 import type { Cliente } from '@/lib/mock-data';
 import {
   documentoTipoLabels,
-  getCitasByClienteId,
   getOrdenComercialById,
   getOrdenesComercialesByClienteId,
   getOrdenesTrabajoByClienteId,
@@ -64,6 +63,7 @@ import {
   getOrdenComercialEstadoLabel,
   type ClienteFormValues,
 } from '@/lib/mock-data';
+import { useCitasStore } from '@/lib/citas/citas-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 interface ClienteDetalleViewProps {
@@ -108,8 +108,10 @@ function ClienteDetalleContent({
   const [openEdit, setOpenEdit] = useState(false);
   const [openDeactivate, setOpenDeactivate] = useState(false);
 
+  const { getCitasByCliente } = useCitasStore();
+
   const vehiculosCliente = getVehiculosByCliente(id);
-  const citasCliente = getCitasByClienteId(id);
+  const citasCliente = getCitasByCliente(id);
   const ordenesTrabajoCliente = getOrdenesTrabajoByClienteId(id);
   const ordenesComercialesCliente = getOrdenesComercialesByClienteId(id);
   const pagosCliente = getPagosByClienteId(id);
@@ -286,9 +288,10 @@ function ClienteDetalleContent({
                 items={citasCliente}
                 emptyMessage="Sin citas registradas"
                 renderItem={(c) => (
-                  <div
+                  <Link
                     key={c.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                    href={`/citas/${c.id}`}
+                    className="flex items-center justify-between rounded-lg border border-border p-3 text-sm transition-colors hover:bg-muted/50"
                   >
                     <div>
                       <p className="font-medium">{getServicioNombre(c.servicioId)}</p>
@@ -297,7 +300,7 @@ function ClienteDetalleContent({
                       </p>
                     </div>
                     <CitaEstadoBadge estado={c.estado} label={citaEstadoLabels[c.estado]} />
-                  </div>
+                  </Link>
                 )}
               />
             </CardContent>

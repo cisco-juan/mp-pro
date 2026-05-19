@@ -10,9 +10,12 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { citasPorDia } from '@/lib/mock-data';
+import { getDefaultWeekStart, useCitasStore } from '@/lib/citas/citas-store';
 
 export function AppointmentsChart() {
+  const { getCitasPorDiaChart } = useCitasStore();
+  const data = getCitasPorDiaChart(getDefaultWeekStart());
+
   return (
     <Card>
       <CardHeader>
@@ -22,7 +25,7 @@ export function AppointmentsChart() {
       <CardContent>
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={citasPorDia} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
               <XAxis
                 dataKey="dia"

@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/app-shell';
+import { CitasProvider } from '@/lib/citas/citas-store';
 import { ClientesProvider } from '@/lib/clientes/clientes-store';
 
 export default function DashboardLayout({
@@ -8,7 +9,9 @@ export default function DashboardLayout({
 }) {
   return (
     <ClientesProvider>
-      <AppShell>{children}</AppShell>
+      <CitasProvider>
+        <AppShell>{children}</AppShell>
+      </CitasProvider>
     </ClientesProvider>
   );
 }

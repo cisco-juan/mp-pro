@@ -265,6 +265,66 @@ export interface Cita {
   notas?: string;
 }
 
+export interface CitaFormValues {
+  clienteId: string;
+  vehiculoId: string;
+  servicioId: string;
+  fecha: string;
+  hora: string;
+  duracionMin: number;
+  notas: string;
+}
+
+export const emptyCitaFormValues: CitaFormValues = {
+  clienteId: '',
+  vehiculoId: '',
+  servicioId: '',
+  fecha: '',
+  hora: '',
+  duracionMin: 60,
+  notas: '',
+};
+
+export const MOCK_TODAY = '2026-05-19';
+
+export const citaDuracionOpciones = [30, 45, 60, 90, 120] as const;
+
+export function citaToFormValues(cita: Cita): CitaFormValues {
+  return {
+    clienteId: cita.clienteId,
+    vehiculoId: cita.vehiculoId,
+    servicioId: cita.servicioId,
+    fecha: cita.fecha,
+    hora: cita.hora,
+    duracionMin: cita.duracionMin,
+    notas: cita.notas ?? '',
+  };
+}
+
+export function formValuesToCitaData(
+  values: CitaFormValues
+): Omit<Cita, 'id' | 'estado'> {
+  return {
+    clienteId: values.clienteId,
+    vehiculoId: values.vehiculoId,
+    servicioId: values.servicioId,
+    fecha: values.fecha,
+    hora: values.hora,
+    duracionMin: values.duracionMin,
+    notas: values.notas.trim() || undefined,
+  };
+}
+
+export function generateCitaId(existing: { id: string }[]): string {
+  let n = existing.length + 1;
+  let id = `ci${n}`;
+  while (existing.some((item) => item.id === id)) {
+    n += 1;
+    id = `ci${n}`;
+  }
+  return id;
+}
+
 export interface PiezaUsada {
   piezaId: string;
   cantidad: number;
@@ -1028,6 +1088,37 @@ export const citas: Cita[] = [
     servicioId: 'sv8',
     estado: 'completada',
   },
+  {
+    id: 'ci9',
+    clienteId: 'c2',
+    vehiculoId: 'v3',
+    fecha: '2026-05-24',
+    hora: '10:30',
+    duracionMin: 60,
+    servicioId: 'sv2',
+    estado: 'pendiente',
+  },
+  {
+    id: 'ci10',
+    clienteId: 'c1',
+    vehiculoId: 'v1',
+    fecha: '2026-05-20',
+    hora: '17:00',
+    duracionMin: 45,
+    servicioId: 'sv5',
+    estado: 'cancelada',
+    notas: 'Cliente canceló por viaje imprevisto',
+  },
+  {
+    id: 'ci11',
+    clienteId: 'c5',
+    vehiculoId: 'v7',
+    fecha: '2026-05-21',
+    hora: '12:00',
+    duracionMin: 90,
+    servicioId: 'sv1',
+    estado: 'pendiente',
+  },
 ];
 
 export const ordenesTrabajo: OrdenTrabajo[] = [
@@ -1536,6 +1627,10 @@ export function getVehiculoById(id: string): Vehiculo | undefined {
 
 export function getVehiculosByClienteId(clienteId: string): Vehiculo[] {
   return vehiculos.filter((v) => v.clienteId === clienteId);
+}
+
+export function getCitaById(id: string): Cita | undefined {
+  return citas.find((c) => c.id === id);
 }
 
 export function getCitasByVehiculoId(vehiculoId: string): Cita[] {
