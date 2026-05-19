@@ -171,6 +171,7 @@ export type ClientesContextValue = {
   clientes: Cliente[];
   vehiculos: Vehiculo[];
   getCliente: (id: string) => Cliente | undefined;
+  getClienteNombre: (clienteId: string) => string;
   getVehiculo: (id: string) => Vehiculo | undefined;
   getVehiculoLabel: (vehiculoId: string) => string;
   getVehiculosByCliente: (clienteId: string) => Vehiculo[];
@@ -201,6 +202,12 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
   const getVehiculo = useCallback(
     (id: string) => state.vehiculos.find((v) => v.id === id),
     [state.vehiculos]
+  );
+
+  const getClienteNombre = useCallback(
+    (clienteId: string) =>
+      state.clientes.find((c) => c.id === clienteId)?.nombre ?? 'Cliente desconocido',
+    [state.clientes]
   );
 
   const getVehiculoLabel = useCallback(
@@ -324,6 +331,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       clientes: state.clientes,
       vehiculos: state.vehiculos,
       getCliente,
+      getClienteNombre,
       getVehiculo,
       getVehiculoLabel,
       getVehiculosByCliente,
@@ -338,6 +346,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       state.clientes,
       state.vehiculos,
       getCliente,
+      getClienteNombre,
       getVehiculo,
       getVehiculoLabel,
       getVehiculosByCliente,

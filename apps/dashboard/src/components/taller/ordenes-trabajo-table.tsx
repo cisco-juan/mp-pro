@@ -30,7 +30,6 @@ import { usePagination } from '@/hooks/use-pagination';
 import {
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
-  getClienteNombre,
   type OrdenEstado,
   type OrdenTrabajoTipo,
 } from '@/lib/mock-data';
@@ -41,7 +40,7 @@ import { formatDisplayDate } from '@org/utils-shared';
 
 export function OrdenesTrabajoTable() {
   const { ordenesTrabajo } = useTallerStore();
-  const { getVehiculoLabel } = useClientesStore();
+  const { getVehiculoLabel, getClienteNombre } = useClientesStore();
   const { getUsuario } = useUsuariosStore();
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');

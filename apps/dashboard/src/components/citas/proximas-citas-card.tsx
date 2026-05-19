@@ -6,11 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CitaEstadoBadge } from '@/components/shared/status-badge';
 import { useCitasStore } from '@/lib/citas/citas-store';
-import { citaEstadoLabels, getClienteNombre, getServicioNombre } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
+import { citaEstadoLabels } from '@/lib/mock-data';
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function ProximasCitasCard() {
   const { citas } = useCitasStore();
+  const { getClienteNombre } = useClientesStore();
+  const { getServicioNombre } = useServiciosStore();
 
   const proximasCitas = citas
     .filter((c) => c.estado !== 'completada' && c.estado !== 'cancelada')

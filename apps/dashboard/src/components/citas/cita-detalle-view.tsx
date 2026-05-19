@@ -18,13 +18,8 @@ import { CitaEditSheet } from '@/components/citas/cita-edit-sheet';
 import { CitaEstadoBadge } from '@/components/shared/status-badge';
 import { useCitasStore } from '@/lib/citas/citas-store';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
-import {
-  citaEstadoLabels,
-  getClienteNombre,
-  getServicioNombre,
-  type CitaEstado,
-  type CitaFormValues,
-} from '@/lib/mock-data';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
+import { citaEstadoLabels, type CitaEstado, type CitaFormValues } from '@/lib/mock-data';
 import { formatDisplayDate } from '@org/utils-shared';
 
 interface CitaDetalleViewProps {
@@ -33,7 +28,8 @@ interface CitaDetalleViewProps {
 
 export function CitaDetalleView({ id }: CitaDetalleViewProps) {
   const { getCita, updateCita, updateCitaEstado } = useCitasStore();
-  const { getVehiculoLabel } = useClientesStore();
+  const { getVehiculoLabel, getClienteNombre } = useClientesStore();
+  const { getServicioNombre } = useServiciosStore();
   const cita = getCita(id);
 
   const [editing, setEditing] = useState(false);

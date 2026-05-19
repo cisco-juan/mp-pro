@@ -10,7 +10,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { OrdenTrabajoForm } from '@/components/taller/orden-trabajo-form';
-import { getClienteNombre, type OrdenTrabajo, type OrdenTrabajoFormValues } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
+import type { OrdenTrabajo, OrdenTrabajoFormValues } from '@/lib/mock-data';
 
 const EDIT_FORM_ID = 'orden-trabajo-edit-form';
 
@@ -27,6 +28,8 @@ export function OrdenTrabajoEditSheet({
   orden,
   onSubmit,
 }: OrdenTrabajoEditSheetProps) {
+  const { getClienteNombre } = useClientesStore();
+
   function handleClose() {
     onOpenChange(false);
   }

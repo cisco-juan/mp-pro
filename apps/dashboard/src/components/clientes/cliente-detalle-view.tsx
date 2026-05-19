@@ -48,9 +48,9 @@ import {
   type ClientesContextValue,
 } from '@/lib/clientes/clientes-store';
 import type { Cliente } from '@/lib/mock-data';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
 import {
   documentoTipoLabels,
-  getServicioNombre,
   citaEstadoLabels,
   ordenComercialTipoLabels,
   ordenEstadoLabels,
@@ -106,6 +106,7 @@ function ClienteDetalleContent({
   const [openEdit, setOpenEdit] = useState(false);
   const [openDeactivate, setOpenDeactivate] = useState(false);
 
+  const { getServicioNombre } = useServiciosStore();
   const { getCitasByCliente } = useCitasStore();
   const { getOrdenesByCliente } = useTallerStore();
   const { getOrdenesByCliente: getOrdenesComercialesByCliente, getPagosByClienteId, getOrdenComercial } =

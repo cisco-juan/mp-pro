@@ -10,7 +10,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { CitaForm } from '@/components/citas/cita-form';
-import { getClienteNombre, getServicioNombre, type Cita, type CitaFormValues } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
+import type { Cita, CitaFormValues } from '@/lib/mock-data';
 
 const EDIT_FORM_ID = 'cita-edit-form';
 
@@ -27,6 +29,9 @@ export function CitaEditSheet({
   cita,
   onSubmit,
 }: CitaEditSheetProps) {
+  const { getClienteNombre } = useClientesStore();
+  const { getServicioNombre } = useServiciosStore();
+
   function handleClose() {
     onOpenChange(false);
   }

@@ -11,12 +11,9 @@ import {
   getDefaultWeekStart,
   useCitasStore,
 } from '@/lib/citas/citas-store';
-import {
-  citaEstadoLabels,
-  getClienteNombre,
-  getServicioNombre,
-  MOCK_TODAY,
-} from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
+import { citaEstadoLabels, MOCK_TODAY } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
 
 function addDays(date: Date, days: number): Date {
@@ -42,6 +39,8 @@ function formatSemanaRango(weekStart: Date): string {
 
 export function CitasSemanaGrid() {
   const { getCitasPorSemana } = useCitasStore();
+  const { getClienteNombre } = useClientesStore();
+  const { getServicioNombre } = useServiciosStore();
   const [weekStart, setWeekStart] = useState(() => getDefaultWeekStart());
 
   const citasPorDia = useMemo(

@@ -22,11 +22,11 @@ import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
 import {
-  getClienteNombre,
   getOrdenComercialEstadoLabel,
   ordenComercialTipoLabels,
   type OrdenComercial,
 } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
@@ -35,6 +35,7 @@ interface OrdenesTableProps {
 }
 
 export function OrdenesTable({ tipo }: OrdenesTableProps) {
+  const { getClienteNombre } = useClientesStore();
   const { ordenesComerciales, convertCotizacionToFactura } = useOrdenesComercialesStore();
   const [search, setSearch] = useState('');
 

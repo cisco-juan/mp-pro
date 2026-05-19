@@ -34,7 +34,8 @@ import { PagoMetodoBadge } from '@/components/shared/status-badge';
 import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { getClienteNombre, pagoMetodoLabels, type PagoMetodo } from '@/lib/mock-data';
+import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { pagoMetodoLabels, type PagoMetodo } from '@/lib/mock-data';
 import {
   emptyPagoFormValues,
   useOrdenesComercialesStore,
@@ -42,6 +43,7 @@ import {
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function PagosTable() {
+  const { getClienteNombre } = useClientesStore();
   const {
     pagos,
     getOrdenComercial,
@@ -72,7 +74,7 @@ export function PagosTable() {
 
       return matchesSearch && matchesMetodo;
     });
-  }, [pagosActivos, search, filtroMetodo, getOrdenComercial]);
+  }, [pagosActivos, search, filtroMetodo, getOrdenComercial, getClienteNombre]);
 
   const resetKey = `${search}-${filtroMetodo}`;
   const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({

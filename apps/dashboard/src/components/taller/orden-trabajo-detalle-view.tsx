@@ -45,8 +45,6 @@ import { useTallerStore } from '@/lib/taller/taller-store';
 import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import {
-  getClienteNombre,
-  getPiezaNombre,
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
   type OrdenEstado,
@@ -69,7 +67,7 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
     removePieza,
     assignMecanico,
   } = useTallerStore();
-  const { getVehiculoLabel } = useClientesStore();
+  const { getVehiculoLabel, getClienteNombre } = useClientesStore();
   const { getPiezaNombre, reservarStock } = useInventarioStore();
   const { getUsuario, getUsuariosMecanicos } = useUsuariosStore();
 
