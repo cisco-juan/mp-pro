@@ -6,15 +6,7 @@ import { ProximasCitasCard } from '@/components/citas/proximas-citas-card';
 import { DashboardStats } from '@/components/dashboard/dashboard-stats';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { actividadReciente } from '@/lib/mock-data';
+import { ActividadReciente } from '@/components/dashboard/actividad-reciente';
 
 export const metadata = {
   title: 'Dashboard',
@@ -51,28 +43,7 @@ export default function DashboardPage() {
           <CardDescription>Últimos movimientos en el taller</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Actividad</TableHead>
-                <TableHead>Detalle</TableHead>
-                <TableHead className="text-right">Fecha</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {actividadReciente.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.titulo}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {item.descripcion}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-muted-foreground">
-                    {item.fecha}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ActividadReciente />
         </CardContent>
       </Card>
 

@@ -50,10 +50,9 @@ import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
 import { useCitasStore } from '@/lib/citas/citas-store';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
 import {
   citaEstadoLabels,
-  getClienteNombre,
-  getServicioNombre,
   type Cita,
   type CitaEstado,
   type CitaFormValues,
@@ -72,7 +71,8 @@ export function CitasTable({
   hideCreateButton = false,
 }: CitasTableProps) {
   const { citas, createCita, updateCita, updateCitaEstado } = useCitasStore();
-  const { getVehiculoLabel, vehiculos } = useClientesStore();
+  const { getVehiculoLabel, getClienteNombre, vehiculos } = useClientesStore();
+  const { getServicioNombre } = useServiciosStore();
 
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');

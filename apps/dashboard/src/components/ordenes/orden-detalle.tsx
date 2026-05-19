@@ -18,14 +18,13 @@ import {
   OrdenComercialTipoBadge,
 } from '@/components/shared/status-badge';
 import {
-  getClienteNombre,
   getOrdenComercialEstadoLabel,
-  getOrdenTrabajoById,
   ordenComercialTipoLabels,
   type OrdenComercial,
 } from '@/lib/mock-data';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
+import { useTallerStore } from '@/lib/taller/taller-store';
 import { formatDisplayDate } from '@org/utils-shared';
 
 interface OrdenDetalleProps {
@@ -34,7 +33,8 @@ interface OrdenDetalleProps {
 
 export function OrdenDetalle({ orden: ordenProp }: OrdenDetalleProps) {
   const router = useRouter();
-  const { getVehiculoLabel } = useClientesStore();
+  const { getVehiculoLabel, getClienteNombre } = useClientesStore();
+  const { getOrdenTrabajo } = useTallerStore();
   const {
     getOrdenComercial,
     getTotalPagado,
@@ -44,7 +44,7 @@ export function OrdenDetalle({ orden: ordenProp }: OrdenDetalleProps) {
   } = useOrdenesComercialesStore();
 
   const orden = getOrdenComercial(ordenProp.id) ?? ordenProp;
-  const ot = orden.ordenTrabajoId ? getOrdenTrabajoById(orden.ordenTrabajoId) : undefined;
+  const ot = orden.ordenTrabajoId ? getOrdenTrabajo(orden.ordenTrabajoId) : undefined;
   const totalPagado = getTotalPagado(orden.id);
   const pendiente = orden.total - totalPagado;
 

@@ -21,7 +21,6 @@ import { OrdenTrabajoTipoBadge } from '@/components/shared/status-badge';
 import {
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
-  getClienteNombre,
   type OrdenEstado,
   type OrdenTrabajo,
 } from '@/lib/mock-data';
@@ -64,6 +63,7 @@ function OrdenKanbanCardContent({
   getVehiculoLabel: (id: string) => string;
   isDragging?: boolean;
 }) {
+  const { getClienteNombre } = useClientesStore();
   const { getUsuario } = useUsuariosStore();
   const mecanico = orden.usuarioId ? getUsuario(orden.usuarioId) : undefined;
   const progress = getChecklistProgress(orden.checklist);

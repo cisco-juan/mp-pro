@@ -40,14 +40,14 @@ import {
 import { VehiculoEditSheet } from '@/components/vehiculos/vehiculo-edit-sheet';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import { useCitasStore } from '@/lib/citas/citas-store';
+import { useInventarioStore } from '@/lib/inventario/inventario-store';
 import { useOrdenesComercialesStore } from '@/lib/ordenes/ordenes-comerciales-store';
+import { useServiciosStore } from '@/lib/servicios/servicios-store';
 import { useTallerStore } from '@/lib/taller/taller-store';
 import {
   citaEstadoLabels,
   getGarantiasByVehiculoId,
   getOrdenComercialEstadoLabel,
-  getPiezaNombre,
-  getServicioNombre,
   ordenComercialTipoLabels,
   ordenEstadoLabels,
   ordenTrabajoTipoLabels,
@@ -97,6 +97,8 @@ function VehiculoDetalleContent({
   const cliente = getCliente(vehiculo.clienteId);
   const { getCitasByVehiculo } = useCitasStore();
   const { getOrdenesByVehiculo } = useTallerStore();
+  const { getPiezaNombre } = useInventarioStore();
+  const { getServicioNombre } = useServiciosStore();
   const { ordenesComerciales: todasOrdenesComerciales } = useOrdenesComercialesStore();
   const citas = getCitasByVehiculo(id);
   const ordenesTrabajo = getOrdenesByVehiculo(id);

@@ -35,7 +35,7 @@ export function AgregarPiezaDialog({
   onAdd,
   piezasExistentes,
 }: AgregarPiezaDialogProps) {
-  const { piezas, getPieza, reservarStock } = useInventarioStore();
+  const { piezas, getPieza } = useInventarioStore();
   const [piezaId, setPiezaId] = useState('');
   const [cantidad, setCantidad] = useState('1');
   const [error, setError] = useState('');
