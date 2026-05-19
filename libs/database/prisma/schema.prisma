@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Placeholder fase 1 — reemplazar con modelos de dominio en fases siguientes.
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("health_checks")
+}

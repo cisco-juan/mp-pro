@@ -1,0 +1,18 @@
+.button {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}

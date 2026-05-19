@@ -1,105 +1,96 @@
-# New Nx Repository
+# MP Pro
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Sistema de gestión para talleres de vehículos (mantenimientos, reparaciones, inventarios). Monorepo Nx con aplicaciones web, API y móvil.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Requisitos
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-## Try the full Nx platform
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/setup/connect-workspace/guide). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
-## Generate a library
+- Node.js 20+
+- Docker (para PostgreSQL local)
+- npm
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
-```
-
-## Run tasks
-
-To build the library use:
-
-```sh
-npx nx build pkg1
-```
-
-To run any task with Nx use:
-
-```sh
-npx nx <target> <project-name>
-```
-
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
+## Estructura del workspace
 
 ```
-npx nx release
+apps/
+  api/          # NestJS — backend REST
+  dashboard/    # Next.js — panel web
+  app/          # Expo — app móvil
+libs/
+  ui-shared/    # Componentes React DOM (solo web, fase 1)
+  utils-shared/ # Utilidades compartidas
+  database/     # Prisma + cliente PostgreSQL
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+## Configuración inicial
 
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. Instalar dependencias:
 
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
-
-```sh
-npx nx sync
+```bash
+npm install
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+2. Variables de entorno:
 
-```sh
-npx nx sync:check
+```bash
+cp .env.example .env
+cp libs/database/.env.example libs/database/.env  # o enlazar con la misma DATABASE_URL
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+3. Base de datos:
 
-## Nx Cloud
-
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
+```bash
+npm run db:up
+npm run db:migrate
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+4. Sincronizar referencias TypeScript:
 
-## Install Nx Console
+```bash
+npx nx sync --yes
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+## Comandos de desarrollo
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev:api` | API NestJS en http://localhost:3000/api |
+| `npm run dev:dashboard` | Dashboard Next.js |
+| `npm run dev:app` | App Expo (Metro) |
+| `npm run db:up` | Levantar PostgreSQL (Docker) |
+| `npm run db:migrate` | Migraciones Prisma |
+| `npm run verify` | lint + typecheck + build de proyectos principales |
 
-## Useful links
+### Health check API
 
-Learn more:
+Con la API en marcha:
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```bash
+curl http://localhost:3000/api/health
+```
 
-And join the Nx community:
+## Proyectos Nx
 
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```bash
+npx nx show projects
+npx nx graph
+```
+
+### Tags y límites de módulos
+
+- `type:app` / `scope:web|api|mobile`
+- `type:ui` / `type:util` / `type:data-access`
+- El dashboard **no** importa `@org/database` directamente (solo vía HTTP a la API).
+
+## Alcance fase 1
+
+- Estructura del monorepo y configuración base
+- Prisma + PostgreSQL con modelo placeholder `HealthCheck`
+- Sin dominio de negocio (vehículos, órdenes, inventario)
+- `ui-shared` solo para web; la app móvil usa `utils-shared` únicamente
+
+## Tecnologías
+
+- [Nx](https://nx.dev) 22
+- NestJS, Next.js 16, Expo 54
+- Prisma 7 + PostgreSQL 16
+- TypeScript 5.9

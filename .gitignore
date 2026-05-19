@@ -47,3 +47,34 @@ Thumbs.db
 .claude/settings.local.json
 .nx/polygraph
 .nx/self-healing
+
+# Environment
+.env
+.env.local
+libs/database/.env
+
+# Prisma generated
+libs/database/generated
+
+# Framework generated
+next-env.d.ts
+
+# Next.js
+.next
+out
+
+# Expo
+node_modules/
+.expo/
+.yarn/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+cache/
+test-output

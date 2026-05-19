@@ -2,5 +2,30 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./libs/utils-shared"
+    },
+    {
+      "path": "./libs/ui-shared"
+    },
+    {
+      "path": "./libs/database"
+    },
+    {
+      "path": "./apps/api-e2e"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/app"
+    },
+    {
+      "path": "./apps/dashboard-e2e"
+    },
+    {
+      "path": "./apps/dashboard"
+    }
+  ]
 }

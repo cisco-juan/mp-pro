@@ -1,0 +1,19 @@
+{
+  "name": "@org/dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "dashboard",
+    "tags": [
+      "type:app",
+      "scope:web"
+    ]
+  },
+  "dependencies": {
+    "@org/ui-shared": "^0.0.1",
+    "@org/utils-shared": "^0.0.1",
+    "next": "~16.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@org/app",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/app"
+  },
+  "nx": {
+    "name": "app",
+    "tags": [
+      "type:app",
+      "scope:mobile"
+    ]
+  },
+  "dependencies": {
+    "@expo/metro-config": "*",
+    "@org/utils-shared": "^0.0.1",
+    "@testing-library/react-native": "*",
+    "expo": "*",
+    "expo-splash-screen": "*",
+    "expo-status-bar": "*",
+    "expo-system-ui": "*",
+    "jest-expo": "*",
+    "metro-config": "*",
+    "metro-resolver": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-svg": "*",
+    "react-native-svg-transformer": "*",
+    "react-native-web": "*"
+  }
+}

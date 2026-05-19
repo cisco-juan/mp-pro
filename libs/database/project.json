@@ -1,0 +1,23 @@
+{
+  "name": "database",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/database/src",
+  "projectType": "library",
+  "tags": ["type:data-access", "scope:shared"],
+  "targets": {
+    "prisma-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "command": "npx prisma generate"
+      }
+    },
+    "prisma-migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "command": "npx prisma migrate dev"
+      }
+    }
+  }
+}

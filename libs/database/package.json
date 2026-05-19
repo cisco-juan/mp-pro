@@ -1,0 +1,35 @@
+{
+  "name": "@org/database",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@org/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "type:data-access",
+      "scope:shared"
+    ]
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^16.4.7",
+    "pg": "^8.21.0",
+    "prisma": "^7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
+}
