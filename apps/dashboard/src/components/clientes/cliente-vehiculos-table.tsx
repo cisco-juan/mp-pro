@@ -51,8 +51,8 @@ export function ClienteVehiculosTable({ clienteId, data }: ClienteVehiculosTable
     items: data,
   });
 
-  function handleCreate(values: VehiculoFormValues) {
-    const created = createVehiculo({ ...values, clienteId });
+  async function handleCreate(values: VehiculoFormValues) {
+    const created = await createVehiculo({ ...values, clienteId });
     if (created) {
       toast.success('Vehículo añadido');
       setOpenCreate(false);
@@ -61,12 +61,14 @@ export function ClienteVehiculosTable({ clienteId, data }: ClienteVehiculosTable
     }
   }
 
-  function handleUpdate(values: VehiculoFormValues) {
+  async function handleUpdate(values: VehiculoFormValues) {
     if (!editingVehiculo) return;
-    const ok = updateVehiculo(editingVehiculo.id, values);
+    const ok = await updateVehiculo(editingVehiculo.id, values);
     if (ok) {
       toast.success('Vehículo actualizado');
       setEditingVehiculo(null);
+    } else {
+      toast.error('No se pudo actualizar el vehículo');
     }
   }
 

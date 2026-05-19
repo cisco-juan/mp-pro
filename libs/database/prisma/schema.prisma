@@ -57,3 +57,63 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+enum ClienteEstado {
+  activo
+  inactivo
+}
+
+enum DocumentoTipo {
+  dni
+  nie
+  cif
+  pasaporte
+}
+
+enum VehiculoEstado {
+  activo
+  inactivo
+}
+
+model Client {
+  id                   String         @id @default(cuid())
+  nombre               String
+  email                String         @unique
+  telefono             String
+  telefonoSecundario   String?        @map("telefono_secundario")
+  empresa              String?
+  notas                String?
+  estado               ClienteEstado  @default(activo)
+  ultimaVisita         DateTime       @default(now()) @map("ultima_visita") @db.Date
+  documentoTipo        DocumentoTipo? @map("documento_tipo")
+  documentoNumero      String?        @map("documento_numero")
+  direccionLinea1      String?        @map("direccion_linea1")
+  direccionLinea2      String?        @map("direccion_linea2")
+  direccionCiudad      String?        @map("direccion_ciudad")
+  direccionCodigoPostal String?       @map("direccion_codigo_postal")
+  direccionProvincia   String?        @map("direccion_provincia")
+  vehicles             Vehicle[]
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  @@map("clients")
+}
+
+model Vehicle {
+  id                   String         @id @default(cuid())
+  clientId             String         @map("client_id")
+  client               Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  matricula            String         @unique
+  marca                String
+  modelo               String
+  anio                 Int
+  color                String         @default("—")
+  kilometraje          Int            @default(0)
+  proximoMantenimiento DateTime       @map("proximo_mantenimiento") @db.Date
+  estado               VehiculoEstado @default(activo)
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@map("vehicles")
+}

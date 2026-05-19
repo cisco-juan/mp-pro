@@ -6,8 +6,10 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { HealthModule } from '../health/health.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { ClientsModule } from '../clients/clients.module';
 import { RolesModule } from '../roles/roles.module';
 import { UsersModule } from '../users/users.module';
+import { VehiclesModule } from '../vehicles/vehicles.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -22,6 +24,8 @@ import { AppService } from './app.service';
     AuthModule,
     UsersModule,
     RolesModule,
+    ClientsModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [

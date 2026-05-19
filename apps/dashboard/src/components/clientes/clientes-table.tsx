@@ -46,8 +46,15 @@ import type { Cliente, ClienteFormValues } from '@/lib/mock-data';
 import { formatDisplayDate } from '@org/utils-shared';
 
 export function ClientesTable() {
-  const { clientes, vehiculos, createCliente, updateCliente, toggleClienteEstado } =
-    useClientesStore();
+  const {
+    clientes,
+    vehiculos,
+    loading,
+    error,
+    createCliente,
+    updateCliente,
+    toggleClienteEstado,
+  } = useClientesStore();
 
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -89,8 +96,8 @@ export function ClientesTable() {
     resetKey,
   });
 
-  function handleCreate(values: ClienteFormValues) {
-    const created = createCliente(values);
+  async function handleCreate(values: ClienteFormValues) {
+    const created = await createCliente(values);
     if (created) {
       toast.success('Cliente creado', {
         description: values.registrarVehiculo
@@ -98,15 +105,19 @@ export function ClientesTable() {
           : `${created.nombre} se ha registrado correctamente.`,
       });
       setOpenCreate(false);
+    } else {
+      toast.error('No se pudo crear el cliente');
     }
   }
 
-  function handleUpdate(values: ClienteFormValues) {
+  async function handleUpdate(values: ClienteFormValues) {
     if (!editingCliente) return;
-    const ok = updateCliente(editingCliente.id, values);
+    const ok = await updateCliente(editingCliente.id, values);
     if (ok) {
       toast.success('Cliente actualizado');
       setEditingCliente(null);
+    } else {
+      toast.error('No se pudo actualizar el cliente');
     }
   }
 
@@ -115,19 +126,37 @@ export function ClientesTable() {
       setDeactivateTarget(cliente);
       return;
     }
-    const next = toggleClienteEstado(cliente.id);
-    if (next) {
-      toast.success('Cliente activado');
-    }
+    void toggleClienteEstado(cliente.id).then((next) => {
+      if (next) {
+        toast.success('Cliente activado');
+      }
+    });
   }
 
   function confirmDeactivate() {
     if (!deactivateTarget) return;
-    toggleClienteEstado(deactivateTarget.id);
-    toast.success('Cliente desactivado', {
-      description: `${deactivateTarget.nombre} ya no aparecerá como activo.`,
+    void toggleClienteEstado(deactivateTarget.id).then((next) => {
+      if (next) {
+        toast.success('Cliente desactivado', {
+          description: `${deactivateTarget.nombre} ya no aparecerá como activo.`,
+        });
+      }
+      setDeactivateTarget(null);
     });
-    setDeactivateTarget(null);
+  }
+
+  if (loading) {
+    return (
+      <p className="text-sm text-muted-foreground">Cargando clientes…</p>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {error}
+      </p>
+    );
   }
 
   return (

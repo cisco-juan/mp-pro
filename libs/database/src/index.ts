@@ -5,4 +5,11 @@ export {
   PrismaClient,
 } from './lib/prisma.js';
 
-export type { Role, User, RefreshToken } from '../generated/prisma/client.js';
+export type {
+  Client,
+  Role,
+  User,
+  RefreshToken,
+  Vehicle,
+} from '../generated/prisma/client.js';
+export type { Prisma } from '../generated/prisma/client.js';
