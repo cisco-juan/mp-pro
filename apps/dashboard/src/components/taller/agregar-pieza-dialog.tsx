@@ -25,7 +25,7 @@ import { useInventarioStore } from '@/lib/inventario/inventario-store';
 interface AgregarPiezaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (pieza: PiezaUsada) => void;
+  onAdd: (pieza: PiezaUsada) => void | Promise<void>;
   piezasExistentes: PiezaUsada[];
 }
 

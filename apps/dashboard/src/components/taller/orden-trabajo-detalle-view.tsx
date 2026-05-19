@@ -385,8 +385,9 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
         open={openPieza}
         onOpenChange={setOpenPieza}
         piezasExistentes={ordenData.piezasUsadas}
-        onAdd={(pieza) => {
-          if (!reservarStock(pieza.piezaId, pieza.cantidad)) {
+        onAdd={async (pieza) => {
+          const ok = await reservarStock(pieza.piezaId, pieza.cantidad);
+          if (!ok) {
             toast.error('Stock insuficiente en inventario');
             return;
           }

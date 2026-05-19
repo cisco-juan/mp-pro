@@ -7,6 +7,7 @@ export {
 
 export type {
   Client,
+  InventoryPart,
   Role,
   User,
   RefreshToken,

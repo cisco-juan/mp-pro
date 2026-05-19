@@ -83,3 +83,15 @@ export type Vehiculo = {
   urgencia: MantenimientoUrgencia;
   estado: VehiculoEstado;
 };
+
+export type Pieza = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  stock: number;
+  stockMinimo: number;
+  precioUnitario: number;
+  ubicacion?: string;
+  estado?: 'activo' | 'inactivo';
+};

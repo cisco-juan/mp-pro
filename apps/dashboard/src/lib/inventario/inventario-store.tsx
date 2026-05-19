@@ -4,69 +4,21 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import {
-  piezas as initialPiezas,
-  type Pieza,
-  type PiezaFormValues,
-} from '@/lib/mock-data';
-
-type State = {
-  piezas: Pieza[];
-};
-
-type Action =
-  | { type: 'ADD_PIEZA'; pieza: Pieza }
-  | { type: 'UPDATE_PIEZA'; id: string; data: Partial<Pieza> }
-  | { type: 'ADJUST_STOCK'; id: string; delta: number };
-
-function generatePiezaId(existing: { id: string }[]): string {
-  let n = existing.length + 1;
-  let id = `p${n}`;
-  while (existing.some((item) => item.id === id)) {
-    n += 1;
-    id = `p${n}`;
-  }
-  return id;
-}
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'ADD_PIEZA':
-      return { piezas: [...state.piezas, action.pieza] };
-    case 'UPDATE_PIEZA':
-      return {
-        piezas: state.piezas.map((p) =>
-          p.id === action.id ? { ...p, ...action.data } : p
-        ),
-      };
-    case 'ADJUST_STOCK':
-      return {
-        piezas: state.piezas.map((p) =>
-          p.id === action.id
-            ? { ...p, stock: Math.max(0, p.stock + action.delta) }
-            : p
-        ),
-      };
-    default:
-      return state;
-  }
-}
-
-function formValuesToPiezaData(values: PiezaFormValues): Omit<Pieza, 'id'> {
-  return {
-    codigo: values.codigo.trim().toUpperCase(),
-    nombre: values.nombre.trim(),
-    categoria: values.categoria.trim(),
-    stock: parseInt(values.stock, 10) || 0,
-    stockMinimo: parseInt(values.stockMinimo, 10) || 0,
-    precioUnitario: parseFloat(values.precioUnitario) || 0,
-    ubicacion: values.ubicacion.trim() || undefined,
-  };
-}
+  adjustStockApi,
+  createPiezaApi,
+  fetchPiezas,
+  reserveStockApi,
+  updatePiezaApi,
+} from '@/lib/api/inventario-api';
+import type { Pieza } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/auth-store';
+import type { PiezaFormValues } from '@/lib/mock-data';
 
 export const emptyPiezaFormValues: PiezaFormValues = {
   codigo: '',
@@ -82,101 +34,148 @@ export type InventarioContextValue = {
   piezas: Pieza[];
   categorias: string[];
   stockBajoCount: number;
+  loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
   getPieza: (id: string) => Pieza | undefined;
   getPiezaNombre: (id: string) => string;
-  createPieza: (values: PiezaFormValues) => Pieza | null;
-  updatePieza: (id: string, values: PiezaFormValues) => boolean;
-  adjustStock: (id: string, delta: number) => boolean;
-  reservarStock: (id: string, cantidad: number) => boolean;
+  createPieza: (values: PiezaFormValues) => Promise<Pieza | null>;
+  updatePieza: (id: string, values: PiezaFormValues) => Promise<boolean>;
+  adjustStock: (id: string, delta: number) => Promise<boolean>;
+  reservarStock: (id: string, cantidad: number) => Promise<boolean>;
 };
 
 const InventarioContext = createContext<InventarioContextValue | null>(null);
 
 export function InventarioProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { piezas: initialPiezas });
+  const { isAuthenticated } = useAuth();
+  const [piezas, setPiezas] = useState<Pieza[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) {
+      setPiezas([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchPiezas();
+      setPiezas(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar inventario');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   const categorias = useMemo(
-    () => [...new Set(state.piezas.map((p) => p.categoria))].sort(),
-    [state.piezas]
+    () => [...new Set(piezas.map((p) => p.categoria))].sort(),
+    [piezas],
   );
 
   const stockBajoCount = useMemo(
-    () => state.piezas.filter((p) => p.stock <= p.stockMinimo).length,
-    [state.piezas]
+    () => piezas.filter((p) => p.stock <= p.stockMinimo).length,
+    [piezas],
   );
 
   const getPieza = useCallback(
-    (id: string) => state.piezas.find((p) => p.id === id),
-    [state.piezas]
+    (id: string) => piezas.find((p) => p.id === id),
+    [piezas],
   );
 
   const getPiezaNombre = useCallback(
-    (id: string) => state.piezas.find((p) => p.id === id)?.nombre ?? 'Pieza desconocida',
-    [state.piezas]
+    (id: string) => piezas.find((p) => p.id === id)?.nombre ?? 'Pieza desconocida',
+    [piezas],
   );
 
   const createPieza = useCallback(
-    (values: PiezaFormValues): Pieza | null => {
+    async (values: PiezaFormValues): Promise<Pieza | null> => {
       const codigo = values.codigo.trim().toUpperCase();
       if (!codigo || !values.nombre.trim() || !values.categoria.trim()) {
         return null;
       }
-      if (state.piezas.some((p) => p.codigo.toUpperCase() === codigo)) {
+      if (piezas.some((p) => p.codigo.toUpperCase() === codigo)) {
         return null;
       }
 
-      const pieza: Pieza = {
-        id: generatePiezaId(state.piezas),
-        ...formValuesToPiezaData(values),
-      };
-      dispatch({ type: 'ADD_PIEZA', pieza });
-      return pieza;
+      try {
+        const created = await createPiezaApi(values);
+        setPiezas((prev) =>
+          [...prev, created].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+        );
+        return created;
+      } catch {
+        return null;
+      }
     },
-    [state.piezas]
+    [piezas],
   );
 
   const updatePieza = useCallback(
-    (id: string, values: PiezaFormValues): boolean => {
-      const existing = state.piezas.find((p) => p.id === id);
+    async (id: string, values: PiezaFormValues): Promise<boolean> => {
+      const existing = piezas.find((p) => p.id === id);
       if (!existing) return false;
 
       const codigo = values.codigo.trim().toUpperCase();
-      if (
-        state.piezas.some((p) => p.id !== id && p.codigo.toUpperCase() === codigo)
-      ) {
+      if (piezas.some((p) => p.id !== id && p.codigo.toUpperCase() === codigo)) {
         return false;
       }
 
-      dispatch({ type: 'UPDATE_PIEZA', id, data: formValuesToPiezaData(values) });
-      return true;
+      try {
+        const updated = await updatePiezaApi(id, values);
+        setPiezas((prev) => prev.map((p) => (p.id === id ? updated : p)));
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [state.piezas]
+    [piezas],
   );
 
-  const adjustStock = useCallback(
-    (id: string, delta: number): boolean => {
-      if (!state.piezas.some((p) => p.id === id)) return false;
-      dispatch({ type: 'ADJUST_STOCK', id, delta });
+  const adjustStock = useCallback(async (id: string, delta: number): Promise<boolean> => {
+    if (!piezas.some((p) => p.id === id)) return false;
+
+    try {
+      const updated = await adjustStockApi(id, delta);
+      setPiezas((prev) => prev.map((p) => (p.id === id ? updated : p)));
       return true;
-    },
-    [state.piezas]
-  );
+    } catch {
+      return false;
+    }
+  }, [piezas]);
 
   const reservarStock = useCallback(
-    (id: string, cantidad: number): boolean => {
-      const pieza = state.piezas.find((p) => p.id === id);
+    async (id: string, cantidad: number): Promise<boolean> => {
+      const pieza = piezas.find((p) => p.id === id);
       if (!pieza || cantidad < 1 || pieza.stock < cantidad) return false;
-      dispatch({ type: 'ADJUST_STOCK', id, delta: -cantidad });
-      return true;
+
+      try {
+        const updated = await reserveStockApi(id, cantidad);
+        setPiezas((prev) => prev.map((p) => (p.id === id ? updated : p)));
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [state.piezas]
+    [piezas],
   );
 
   const value = useMemo(
     () => ({
-      piezas: state.piezas,
+      piezas,
       categorias,
       stockBajoCount,
+      loading,
+      error,
+      reload,
       getPieza,
       getPiezaNombre,
       createPieza,
@@ -185,16 +184,19 @@ export function InventarioProvider({ children }: { children: ReactNode }) {
       reservarStock,
     }),
     [
-      state.piezas,
+      piezas,
       categorias,
       stockBajoCount,
+      loading,
+      error,
+      reload,
       getPieza,
       getPiezaNombre,
       createPieza,
       updatePieza,
       adjustStock,
       reservarStock,
-    ]
+    ],
   );
 
   return (
