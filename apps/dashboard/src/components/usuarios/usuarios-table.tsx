@@ -13,7 +13,7 @@ import {
 import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import type { Usuario } from '@/lib/mock-data';
+import type { Usuario } from '@/lib/usuarios/usuarios-store';
 import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 
 function getInitials(name: string) {

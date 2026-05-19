@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { MobileNav } from './mobile-nav';
+import { useAuth } from '@/lib/auth/auth-store';
 
 export interface HeaderBreadcrumb {
   label: string;
@@ -24,6 +25,14 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
+  const { user, logout } = useAuth();
+  const initials = user?.nombre
+    ?.split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() ?? 'MP';
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background px-4 lg:px-6">
       <div className="relative z-20 shrink-0">
@@ -60,17 +69,24 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="flex items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-muted"
+          title="Cerrar sesión"
+        >
           <Avatar className="size-9">
             <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-              AT
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-sm font-medium">Admin Taller</p>
-            <p className="truncate text-xs text-muted-foreground">admin@mppro.local</p>
+            <p className="truncate text-sm font-medium">{user?.nombre ?? 'Usuario'}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user?.email ?? ''}
+            </p>
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );

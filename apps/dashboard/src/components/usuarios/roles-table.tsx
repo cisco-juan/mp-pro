@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { DataTableShell } from '@/components/shared/data-table-shell';
-import type { Rol } from '@/lib/mock-data';
+import type { Rol } from '@/lib/usuarios/usuarios-store';
 import { useUsuariosStore } from '@/lib/usuarios/usuarios-store';
 
 export function RolesTable({ data }: { data: Rol[] }) {
