@@ -1,6 +1,16 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { CitaEstado, MantenimientoUrgencia, OrdenEstado } from '@/lib/mock-data';
+import type {
+  CitaEstado,
+  CotizacionEstado,
+  FacturaEstado,
+  MantenimientoUrgencia,
+  OrdenComercialEstado,
+  OrdenComercialTipo,
+  OrdenEstado,
+  OrdenTrabajoTipo,
+  PagoMetodo,
+} from '@/lib/mock-data';
 
 const citaVariants: Record<CitaEstado, string> = {
   pendiente: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
@@ -14,6 +24,38 @@ const ordenVariants: Record<OrdenEstado, string> = {
   en_progreso: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
   esperando_piezas: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
   completado: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
+};
+
+const ordenTrabajoTipoVariants: Record<OrdenTrabajoTipo, string> = {
+  mantenimiento: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+  reparacion: 'bg-orange-100 text-orange-800 hover:bg-orange-100',
+};
+
+const ordenComercialTipoVariants: Record<OrdenComercialTipo, string> = {
+  cotizacion: 'bg-violet-100 text-violet-800 hover:bg-violet-100',
+  factura: 'bg-indigo-100 text-indigo-800 hover:bg-indigo-100',
+};
+
+const cotizacionEstadoVariants: Record<CotizacionEstado, string> = {
+  borrador: 'bg-slate-100 text-slate-700 hover:bg-slate-100',
+  enviada: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+  aceptada: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
+  rechazada: 'bg-red-100 text-red-800 hover:bg-red-100',
+  convertida: 'bg-violet-100 text-violet-800 hover:bg-violet-100',
+};
+
+const facturaEstadoVariants: Record<FacturaEstado, string> = {
+  borrador: 'bg-slate-100 text-slate-700 hover:bg-slate-100',
+  emitida: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
+  pagada: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
+  vencida: 'bg-red-100 text-red-800 hover:bg-red-100',
+  anulada: 'bg-slate-100 text-slate-500 hover:bg-slate-100',
+};
+
+const pagoMetodoVariants: Record<PagoMetodo, string> = {
+  efectivo: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100',
+  tarjeta: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+  transferencia: 'bg-violet-100 text-violet-800 hover:bg-violet-100',
 };
 
 const urgenciaVariants: Record<MantenimientoUrgencia, string> = {
@@ -56,6 +98,84 @@ export function OrdenEstadoBadge({
   );
 }
 
+export function OrdenTrabajoTipoBadge({
+  tipo,
+  label,
+}: {
+  tipo: OrdenTrabajoTipo;
+  label: string;
+}) {
+  return (
+    <Badge variant="secondary" className={cn(ordenTrabajoTipoVariants[tipo])}>
+      {label}
+    </Badge>
+  );
+}
+
+export function OrdenComercialTipoBadge({
+  tipo,
+  label,
+}: {
+  tipo: OrdenComercialTipo;
+  label: string;
+}) {
+  return (
+    <Badge variant="secondary" className={cn(ordenComercialTipoVariants[tipo])}>
+      {label}
+    </Badge>
+  );
+}
+
+export function OrdenComercialEstadoBadge({
+  tipo,
+  estado,
+  label,
+}: {
+  tipo: OrdenComercialTipo;
+  estado: OrdenComercialEstado;
+  label: string;
+}) {
+  const variant =
+    tipo === 'cotizacion'
+      ? cotizacionEstadoVariants[estado as CotizacionEstado]
+      : facturaEstadoVariants[estado as FacturaEstado];
+
+  return (
+    <Badge variant="secondary" className={cn(variant)}>
+      {label}
+    </Badge>
+  );
+}
+
+export function PagoMetodoBadge({
+  metodo,
+  label,
+}: {
+  metodo: PagoMetodo;
+  label: string;
+}) {
+  return (
+    <Badge variant="secondary" className={cn(pagoMetodoVariants[metodo])}>
+      {label}
+    </Badge>
+  );
+}
+
+export function StockBadge({ stockBajo }: { stockBajo: boolean }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        stockBajo
+          ? 'bg-red-100 text-red-800 hover:bg-red-100'
+          : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100'
+      )}
+    >
+      {stockBajo ? 'Stock bajo' : 'OK'}
+    </Badge>
+  );
+}
+
 export function UrgenciaBadge({ urgencia }: { urgencia: MantenimientoUrgencia }) {
   return (
     <Badge variant="secondary" className={cn(urgenciaVariants[urgencia])}>
@@ -69,6 +189,21 @@ export function ClienteEstadoBadge({
 }: {
   activo: boolean;
 }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        activo
+          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100'
+          : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
+      )}
+    >
+      {activo ? 'Activo' : 'Inactivo'}
+    </Badge>
+  );
+}
+
+export function ActivoBadge({ activo }: { activo: boolean }) {
   return (
     <Badge
       variant="secondary"

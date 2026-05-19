@@ -24,6 +24,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ClienteEstadoBadge } from '@/components/shared/status-badge';
+import { DataTableShell } from '@/components/shared/data-table-shell';
+import { TablePagination } from '@/components/shared/table-pagination';
+import { usePagination } from '@/hooks/use-pagination';
 import type { Cliente } from '@/lib/mock-data';
 import { formatDisplayDate } from '@org/utils-shared';
 import { toast } from 'sonner';
@@ -43,6 +46,11 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
         c.empresa?.toLowerCase().includes(q)
     );
   }, [data, search]);
+
+  const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
+    items: filtered,
+    resetKey: search,
+  });
 
   function handleCreate() {
     toast.success('Cliente creado (maquetación)', {
@@ -102,7 +110,16 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
         </Dialog>
       </div>
 
-      <div className="rounded-lg border border-border">
+      <DataTableShell
+        footer={
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            rangeLabel={rangeLabel}
+            onPageChange={setPage}
+          />
+        }
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -122,7 +139,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((cliente) => (
+              paginatedItems.map((cliente) => (
                 <TableRow key={cliente.id} className="transition-colors hover:bg-muted/40">
                   <TableCell>
                     <div>
@@ -153,7 +170,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </DataTableShell>
     </div>
   );
 }

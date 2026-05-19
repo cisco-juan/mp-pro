@@ -2,9 +2,11 @@ import Link from 'next/link';
 import {
   Calendar,
   Euro,
-  Users,
+  Package,
   Wrench,
   ArrowRight,
+  FileText,
+  Shield,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppointmentsChart } from '@/components/dashboard/appointments-chart';
@@ -24,6 +26,7 @@ import {
   citas,
   dashboardStats,
   getClienteNombre,
+  getServicioNombre,
   citaEstadoLabels,
 } from '@/lib/mock-data';
 import { CitaEstadoBadge } from '@/components/shared/status-badge';
@@ -68,10 +71,11 @@ export default function DashboardPage() {
           trendPositive={false}
         />
         <StatCard
-          title="Clientes activos"
-          value={String(dashboardStats.clientesActivos)}
-          trend={dashboardStats.clientesTrend}
-          icon={Users}
+          title="Stock bajo"
+          value={String(dashboardStats.piezasStockBajo)}
+          trend={`${dashboardStats.facturasPendientes} fact. pend.`}
+          icon={Package}
+          trendPositive={false}
         />
         <StatCard
           title="Ingresos del mes"
@@ -104,7 +108,7 @@ export default function DashboardPage() {
                     label={citaEstadoLabels[cita.estado]}
                   />
                 </div>
-                <p className="text-sm font-medium">{cita.servicio}</p>
+                <p className="text-sm font-medium">{getServicioNombre(cita.servicioId)}</p>
                 <p className="text-xs text-muted-foreground">
                   {getClienteNombre(cita.clienteId)} · {formatDisplayDate(cita.fecha)}
                 </p>
@@ -150,16 +154,17 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { href: '/clientes', label: 'Clientes', desc: 'Gestionar fichas' },
-          { href: '/vehiculos', label: 'Vehículos', desc: 'Flota del taller' },
-          { href: '/mantenimiento', label: 'Órdenes', desc: 'Trabajos en curso' },
-          { href: '/staff', label: 'Equipo', desc: 'Personal del taller' },
+          { href: '/taller', label: 'Taller', desc: 'Trabajos en curso', icon: Wrench },
+          { href: '/inventario', label: 'Inventario', desc: 'Piezas y stock', icon: Package },
+          { href: '/ordenes', label: 'Órdenes', desc: 'Cotizaciones y facturas', icon: FileText },
+          { href: '/usuarios', label: 'Usuarios', desc: 'Acceso y roles', icon: Shield },
         ].map((link) => (
           <Link
             key={link.href}
             href={link.href}
             className="group rounded-lg border border-border bg-card p-4 transition-all duration-200 hover:border-primary/30 hover:shadow-md"
           >
+            <link.icon className="mb-2 size-5 text-muted-foreground group-hover:text-primary" />
             <p className="font-medium group-hover:text-primary">{link.label}</p>
             <p className="text-sm text-muted-foreground">{link.desc}</p>
           </Link>

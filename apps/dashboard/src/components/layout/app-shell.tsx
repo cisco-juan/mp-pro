@@ -11,11 +11,11 @@ interface AppShellProps {
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
   return (
-    <div className="flex min-h-dvh">
+    <div className="flex h-dvh overflow-hidden">
       <AppSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <AppHeader breadcrumbs={breadcrumbs} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>

@@ -1,11 +1,15 @@
 import {
   Calendar,
   Car,
+  ClipboardList,
+  CreditCard,
+  FileText,
   LayoutDashboard,
+  Package,
   Settings,
+  Shield,
   Users,
   Wrench,
-  UserCog,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -20,7 +24,11 @@ export const navItems: NavItem[] = [
   { title: 'Clientes', href: '/clientes', icon: Users },
   { title: 'Vehículos', href: '/vehiculos', icon: Car },
   { title: 'Citas', href: '/citas', icon: Calendar },
-  { title: 'Mantenimiento', href: '/mantenimiento', icon: Wrench },
-  { title: 'Staff', href: '/staff', icon: UserCog },
+  { title: 'Taller', href: '/taller', icon: Wrench },
+  { title: 'Inventario', href: '/inventario', icon: Package },
+  { title: 'Servicios', href: '/servicios', icon: ClipboardList },
+  { title: 'Órdenes', href: '/ordenes', icon: FileText },
+  { title: 'Pagos', href: '/pagos', icon: CreditCard },
+  { title: 'Usuarios', href: '/usuarios', icon: Shield },
   { title: 'Configuración', href: '/configuracion', icon: Settings },
 ];

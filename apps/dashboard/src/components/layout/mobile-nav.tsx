@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -19,10 +20,20 @@ export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="lg:hidden" aria-label="Abrir menú">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="lg:hidden"
+          aria-label="Abrir menú"
+        >
           <Menu className="size-5" />
         </Button>
       </SheetTrigger>
@@ -34,6 +45,7 @@ export function MobileNav() {
             </span>
             MP Pro
           </SheetTitle>
+          <SheetDescription className="sr-only">Navegación principal</SheetDescription>
         </SheetHeader>
         <nav className="flex flex-col gap-1 p-4">
           {navItems.map((item) => {

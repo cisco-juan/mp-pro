@@ -18,6 +18,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { UrgenciaBadge } from '@/components/shared/status-badge';
+import { DataTableShell } from '@/components/shared/data-table-shell';
+import { TablePagination } from '@/components/shared/table-pagination';
+import { usePagination } from '@/hooks/use-pagination';
 import {
   vehiculos,
   getClienteNombre,
@@ -33,6 +36,11 @@ export function VehiculosTable({ data = vehiculos }: { data?: Vehiculo[] }) {
     if (filtro === 'todos') return data;
     return data.filter((v) => v.urgencia === filtro);
   }, [data, filtro]);
+
+  const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
+    items: filtered,
+    resetKey: filtro,
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,7 +58,16 @@ export function VehiculosTable({ data = vehiculos }: { data?: Vehiculo[] }) {
         </Select>
       </div>
 
-      <div className="rounded-lg border border-border">
+      <DataTableShell
+        footer={
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            rangeLabel={rangeLabel}
+            onPageChange={setPage}
+          />
+        }
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -63,7 +80,7 @@ export function VehiculosTable({ data = vehiculos }: { data?: Vehiculo[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((v) => (
+            {paginatedItems.map((v) => (
               <TableRow key={v.id} className="transition-colors hover:bg-muted/40">
                 <TableCell className="font-mono font-medium">{v.matricula}</TableCell>
                 <TableCell>
@@ -89,7 +106,7 @@ export function VehiculosTable({ data = vehiculos }: { data?: Vehiculo[] }) {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </DataTableShell>
     </div>
   );
 }

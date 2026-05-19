@@ -25,8 +25,10 @@ interface AppHeaderProps {
 
 export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:px-6">
-      <MobileNav />
+    <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background px-4 lg:px-6">
+      <div className="relative z-20 shrink-0">
+        <MobileNav />
+      </div>
 
       {breadcrumbs.length > 0 && (
         <Breadcrumb className="hidden min-w-0 sm:block">
@@ -47,7 +49,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
         </Breadcrumb>
       )}
 
-      <div className="ml-auto flex max-w-sm flex-1 items-center gap-3">
+      <div className="ml-auto flex max-w-sm flex-1 items-center gap-3 md:flex-initial">
         <div className="relative hidden w-full md:block">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

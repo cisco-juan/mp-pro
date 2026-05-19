@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,20 +102,24 @@ export function SettingsForm() {
         <Card>
           <CardHeader>
             <CardTitle>Facturación</CardTitle>
-            <CardDescription>Próximamente disponible</CardDescription>
+            <CardDescription>Series, IVA y preferencias de órdenes comerciales</CardDescription>
           </CardHeader>
           <CardContent className="flex max-w-lg flex-col gap-4">
             <div className="flex flex-col gap-2">
+              <Label htmlFor="serie-cot">Serie de cotización</Label>
+              <Input id="serie-cot" defaultValue="COT-2026" />
+            </div>
+            <div className="flex flex-col gap-2">
               <Label htmlFor="serie">Serie de factura</Label>
-              <Input id="serie" defaultValue="FAC-2026" disabled />
+              <Input id="serie" defaultValue="FAC-2026" />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="iva">IVA por defecto (%)</Label>
-              <Input id="iva" defaultValue="21" disabled />
+              <Input id="iva" defaultValue="21" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              El módulo de facturación estará disponible en una próxima versión.
-            </p>
+            <Button variant="outline" asChild className="w-fit">
+              <Link href="/ordenes">Ir al módulo de órdenes</Link>
+            </Button>
           </CardContent>
         </Card>
       </TabsContent>

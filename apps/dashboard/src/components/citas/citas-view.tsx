@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +13,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CitaEstadoBadge } from '@/components/shared/status-badge';
+import { DataTableShell } from '@/components/shared/data-table-shell';
+import { TablePagination } from '@/components/shared/table-pagination';
+import { usePagination } from '@/hooks/use-pagination';
 import {
   citas,
   citaEstadoLabels,
   getClienteNombre,
+  getServicioNombre,
   getVehiculoLabel,
 } from '@/lib/mock-data';
 import { formatDisplayDate } from '@org/utils-shared';
@@ -37,9 +41,17 @@ const citasPorDiaSemana: Record<string, typeof citas> = {
 export function CitasView() {
   const [vista, setVista] = useState<'semana' | 'lista'>('semana');
 
-  const citasOrdenadas = [...citas].sort((a, b) =>
-    `${a.fecha}${a.hora}`.localeCompare(`${b.fecha}${b.hora}`)
+  const citasOrdenadas = useMemo(
+    () =>
+      [...citas].sort((a, b) =>
+        `${a.fecha}${a.hora}`.localeCompare(`${b.fecha}${b.hora}`)
+      ),
+    []
   );
+
+  const { paginatedItems, page, setPage, totalPages, rangeLabel } = usePagination({
+    items: citasOrdenadas,
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -84,7 +96,9 @@ export function CitasView() {
                       )}
                     >
                       <p className="font-mono font-semibold">{cita.hora}</p>
-                      <p className="mt-1 font-medium leading-tight">{cita.servicio}</p>
+                      <p className="mt-1 font-medium leading-tight">
+                        {getServicioNombre(cita.servicioId)}
+                      </p>
                       <p className="mt-1 text-muted-foreground">
                         {getClienteNombre(cita.clienteId)}
                       </p>
@@ -96,7 +110,16 @@ export function CitasView() {
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-border">
+        <DataTableShell
+          footer={
+            <TablePagination
+              page={page}
+              totalPages={totalPages}
+              rangeLabel={rangeLabel}
+              onPageChange={setPage}
+            />
+          }
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -109,7 +132,7 @@ export function CitasView() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {citasOrdenadas.map((cita) => (
+              {paginatedItems.map((cita) => (
                 <TableRow key={cita.id}>
                   <TableCell>{formatDisplayDate(cita.fecha)}</TableCell>
                   <TableCell className="font-mono">{cita.hora}</TableCell>
@@ -117,7 +140,7 @@ export function CitasView() {
                   <TableCell className="max-w-[200px] truncate text-muted-foreground">
                     {getVehiculoLabel(cita.vehiculoId)}
                   </TableCell>
-                  <TableCell>{cita.servicio}</TableCell>
+                  <TableCell>{getServicioNombre(cita.servicioId)}</TableCell>
                   <TableCell>
                     <CitaEstadoBadge
                       estado={cita.estado}
@@ -128,7 +151,7 @@ export function CitasView() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </DataTableShell>
       )}
     </div>
   );

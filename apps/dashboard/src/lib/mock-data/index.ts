@@ -5,7 +5,14 @@ export type OrdenEstado =
   | 'en_progreso'
   | 'esperando_piezas'
   | 'completado';
+export type OrdenTrabajoTipo = 'mantenimiento' | 'reparacion';
 export type MantenimientoUrgencia = 'ok' | 'proximo' | 'vencido';
+export type OrdenComercialTipo = 'cotizacion' | 'factura';
+export type CotizacionEstado = 'borrador' | 'enviada' | 'aceptada' | 'rechazada' | 'convertida';
+export type FacturaEstado = 'borrador' | 'emitida' | 'pagada' | 'vencida' | 'anulada';
+export type OrdenComercialEstado = CotizacionEstado | FacturaEstado;
+export type LineaOrdenTipo = 'servicio' | 'pieza';
+export type PagoMetodo = 'efectivo' | 'tarjeta' | 'transferencia';
 
 export interface Cliente {
   id: string;
@@ -39,43 +46,396 @@ export interface Cita {
   fecha: string;
   hora: string;
   duracionMin: number;
-  servicio: string;
+  servicioId: string;
   estado: CitaEstado;
   notas?: string;
 }
 
-export interface OrdenMantenimiento {
+export interface PiezaUsada {
+  piezaId: string;
+  cantidad: number;
+  precioUnitario: number;
+}
+
+export interface OrdenTrabajo {
   id: string;
   numero: string;
+  tipo: OrdenTrabajoTipo;
   clienteId: string;
   vehiculoId: string;
-  staffId: string;
+  usuarioId: string;
   estado: OrdenEstado;
   descripcion: string;
   fechaEntrada: string;
   fechaEstimada: string;
   totalEstimado: number;
+  piezasUsadas: PiezaUsada[];
+  ordenComercialId?: string;
   checklist: { item: string; completado: boolean }[];
   timeline: { fecha: string; estado: OrdenEstado; nota: string }[];
 }
 
-export interface StaffMember {
+export interface Pieza {
+  id: string;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  stock: number;
+  stockMinimo: number;
+  precioUnitario: number;
+  ubicacion?: string;
+}
+
+export interface Servicio {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  duracionMin: number;
+  categoria: string;
+  activo: boolean;
+}
+
+export interface LineaOrden {
+  id: string;
+  tipo: LineaOrdenTipo;
+  referenciaId: string;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
+export interface OrdenComercial {
+  id: string;
+  numero: string;
+  tipo: OrdenComercialTipo;
+  estado: OrdenComercialEstado;
+  clienteId: string;
+  vehiculoId?: string;
+  ordenTrabajoId?: string;
+  fecha: string;
+  validezHasta?: string;
+  lineas: LineaOrden[];
+  subtotal: number;
+  iva: number;
+  total: number;
+}
+
+export interface Pago {
+  id: string;
+  ordenComercialId: string;
+  monto: number;
+  fecha: string;
+  metodo: PagoMetodo;
+  referencia?: string;
+  notas?: string;
+}
+
+export interface Rol {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  permisos: string[];
+}
+
+export interface Usuario {
   id: string;
   nombre: string;
   email: string;
   telefono: string;
-  rol: string;
+  rolId: string;
   activo: boolean;
   ordenesActivas: number;
 }
 
 export interface ActividadReciente {
   id: string;
-  tipo: 'cita' | 'orden' | 'cliente';
+  tipo: 'cita' | 'orden' | 'cliente' | 'pago';
   titulo: string;
   descripcion: string;
   fecha: string;
 }
+
+export const roles: Rol[] = [
+  {
+    id: 'r1',
+    nombre: 'Administrador',
+    descripcion: 'Acceso completo al sistema',
+    permisos: ['taller:write', 'ordenes:write', 'pagos:write', 'usuarios:write', 'inventario:write'],
+  },
+  {
+    id: 'r2',
+    nombre: 'Mecánico',
+    descripcion: 'Gestión de órdenes de trabajo y taller',
+    permisos: ['taller:write', 'inventario:read', 'servicios:read'],
+  },
+  {
+    id: 'r3',
+    nombre: 'Recepcionista',
+    descripcion: 'Citas, clientes y cotizaciones',
+    permisos: ['citas:write', 'clientes:write', 'ordenes:write', 'pagos:read'],
+  },
+  {
+    id: 'r4',
+    nombre: 'Administración',
+    descripcion: 'Facturación y pagos',
+    permisos: ['ordenes:write', 'pagos:write', 'clientes:read'],
+  },
+];
+
+export const usuarios: Usuario[] = [
+  {
+    id: 'u1',
+    nombre: 'Roberto Díaz',
+    email: 'roberto.diaz@mppro.local',
+    telefono: '+34 600 111 222',
+    rolId: 'r2',
+    activo: true,
+    ordenesActivas: 2,
+  },
+  {
+    id: 'u2',
+    nombre: 'Elena Vargas',
+    email: 'elena.vargas@mppro.local',
+    telefono: '+34 600 222 333',
+    rolId: 'r2',
+    activo: true,
+    ordenesActivas: 1,
+  },
+  {
+    id: 'u3',
+    nombre: 'David Molina',
+    email: 'david.molina@mppro.local',
+    telefono: '+34 600 333 444',
+    rolId: 'r2',
+    activo: true,
+    ordenesActivas: 1,
+  },
+  {
+    id: 'u4',
+    nombre: 'Sofía Herrera',
+    email: 'sofia.herrera@mppro.local',
+    telefono: '+34 600 444 555',
+    rolId: 'r2',
+    activo: true,
+    ordenesActivas: 1,
+  },
+  {
+    id: 'u5',
+    nombre: 'Antonio Reyes',
+    email: 'antonio.reyes@mppro.local',
+    telefono: '+34 600 555 666',
+    rolId: 'r3',
+    activo: true,
+    ordenesActivas: 0,
+  },
+  {
+    id: 'u6',
+    nombre: 'Carmen López',
+    email: 'carmen.lopez@mppro.local',
+    telefono: '+34 600 666 777',
+    rolId: 'r4',
+    activo: true,
+    ordenesActivas: 0,
+  },
+  {
+    id: 'u7',
+    nombre: 'Francisco Núñez',
+    email: 'francisco.nunez@mppro.local',
+    telefono: '+34 600 777 888',
+    rolId: 'r2',
+    activo: false,
+    ordenesActivas: 0,
+  },
+  {
+    id: 'u8',
+    nombre: 'Admin MP Pro',
+    email: 'admin@mppro.local',
+    telefono: '+34 600 000 001',
+    rolId: 'r1',
+    activo: true,
+    ordenesActivas: 0,
+  },
+];
+
+export const servicios: Servicio[] = [
+  {
+    id: 'sv1',
+    nombre: 'Cambio aceite y filtros',
+    descripcion: 'Aceite sintético 5W30 y filtros de aceite y aire',
+    precio: 89.0,
+    duracionMin: 60,
+    categoria: 'Mantenimiento',
+    activo: true,
+  },
+  {
+    id: 'sv2',
+    nombre: 'Revisión frenos',
+    descripcion: 'Inspección pastillas, discos y líquido de frenos',
+    precio: 45.0,
+    duracionMin: 45,
+    categoria: 'Frenos',
+    activo: true,
+  },
+  {
+    id: 'sv3',
+    nombre: 'Diagnóstico motor',
+    descripcion: 'Lectura OBD y diagnóstico completo del motor',
+    precio: 65.0,
+    duracionMin: 90,
+    categoria: 'Motor',
+    activo: true,
+  },
+  {
+    id: 'sv4',
+    nombre: 'ITV pre-revisión',
+    descripcion: 'Comprobación previa a la inspección técnica',
+    precio: 35.0,
+    duracionMin: 60,
+    categoria: 'Inspección',
+    activo: true,
+  },
+  {
+    id: 'sv5',
+    nombre: 'Rotación neumáticos',
+    descripcion: 'Rotación y equilibrado de neumáticos',
+    precio: 40.0,
+    duracionMin: 45,
+    categoria: 'Neumáticos',
+    activo: true,
+  },
+  {
+    id: 'sv6',
+    nombre: 'Mantenimiento 80.000 km',
+    descripcion: 'Servicio completo según plan del fabricante',
+    precio: 320.0,
+    duracionMin: 180,
+    categoria: 'Mantenimiento',
+    activo: true,
+  },
+  {
+    id: 'sv7',
+    nombre: 'Aire acondicionado',
+    descripcion: 'Recarga y revisión del sistema de climatización',
+    precio: 75.0,
+    duracionMin: 60,
+    categoria: 'Climatización',
+    activo: true,
+  },
+  {
+    id: 'sv8',
+    nombre: 'Reparación suspensión',
+    descripcion: 'Sustitución amortiguadores y silentblocks',
+    precio: 280.0,
+    duracionMin: 120,
+    categoria: 'Suspensión',
+    activo: false,
+  },
+];
+
+export const piezas: Pieza[] = [
+  {
+    id: 'p1',
+    codigo: 'FLT-OIL-001',
+    nombre: 'Filtro de aceite',
+    categoria: 'Filtros',
+    stock: 24,
+    stockMinimo: 10,
+    precioUnitario: 12.5,
+    ubicacion: 'A-01',
+  },
+  {
+    id: 'p2',
+    codigo: 'FLT-AIR-002',
+    nombre: 'Filtro de aire',
+    categoria: 'Filtros',
+    stock: 18,
+    stockMinimo: 8,
+    precioUnitario: 18.0,
+    ubicacion: 'A-02',
+  },
+  {
+    id: 'p3',
+    codigo: 'BRK-PAD-F',
+    nombre: 'Pastillas freno delanteras',
+    categoria: 'Frenos',
+    stock: 6,
+    stockMinimo: 4,
+    precioUnitario: 45.0,
+    ubicacion: 'B-03',
+  },
+  {
+    id: 'p4',
+    codigo: 'BRK-DISC-F',
+    nombre: 'Discos freno delanteros (par)',
+    categoria: 'Frenos',
+    stock: 4,
+    stockMinimo: 2,
+    precioUnitario: 89.0,
+    ubicacion: 'B-04',
+  },
+  {
+    id: 'p5',
+    codigo: 'OIL-5W30-5L',
+    nombre: 'Aceite 5W30 5L',
+    categoria: 'Lubricantes',
+    stock: 15,
+    stockMinimo: 6,
+    precioUnitario: 32.0,
+    ubicacion: 'C-01',
+  },
+  {
+    id: 'p6',
+    codigo: 'BAT-12V-74AH',
+    nombre: 'Batería 12V 74Ah',
+    categoria: 'Eléctrico',
+    stock: 3,
+    stockMinimo: 2,
+    precioUnitario: 125.0,
+    ubicacion: 'D-01',
+  },
+  {
+    id: 'p7',
+    codigo: 'TUR-OEM-001',
+    nombre: 'Turbocompresor OEM',
+    categoria: 'Motor',
+    stock: 0,
+    stockMinimo: 1,
+    precioUnitario: 890.0,
+    ubicacion: 'E-02',
+  },
+  {
+    id: 'p8',
+    codigo: 'KIT-DIST-001',
+    nombre: 'Kit distribución completo',
+    categoria: 'Motor',
+    stock: 2,
+    stockMinimo: 2,
+    precioUnitario: 245.0,
+    ubicacion: 'E-01',
+  },
+  {
+    id: 'p9',
+    codigo: 'SPK-PLG-004',
+    nombre: 'Bujías (juego 4)',
+    categoria: 'Motor',
+    stock: 8,
+    stockMinimo: 4,
+    precioUnitario: 28.0,
+    ubicacion: 'E-03',
+  },
+  {
+    id: 'p10',
+    codigo: 'MED-UNIT-001',
+    nombre: 'Unidad multimedia Android',
+    categoria: 'Accesorios',
+    stock: 5,
+    stockMinimo: 2,
+    precioUnitario: 199.0,
+    ubicacion: 'F-01',
+  },
+];
 
 export const clientes: Cliente[] = [
   {
@@ -263,7 +623,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-19',
     hora: '09:00',
     duracionMin: 60,
-    servicio: 'Revisión frenos',
+    servicioId: 'sv2',
     estado: 'confirmada',
   },
   {
@@ -273,7 +633,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-19',
     hora: '11:30',
     duracionMin: 90,
-    servicio: 'Cambio aceite y filtros',
+    servicioId: 'sv1',
     estado: 'pendiente',
   },
   {
@@ -283,7 +643,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-19',
     hora: '15:00',
     duracionMin: 120,
-    servicio: 'Diagnóstico motor',
+    servicioId: 'sv3',
     estado: 'confirmada',
   },
   {
@@ -293,7 +653,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-20',
     hora: '10:00',
     duracionMin: 60,
-    servicio: 'ITV pre-revisión',
+    servicioId: 'sv4',
     estado: 'pendiente',
   },
   {
@@ -303,7 +663,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-21',
     hora: '09:30',
     duracionMin: 45,
-    servicio: 'Rotación neumáticos',
+    servicioId: 'sv5',
     estado: 'confirmada',
   },
   {
@@ -313,7 +673,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-22',
     hora: '08:00',
     duracionMin: 180,
-    servicio: 'Mantenimiento 80.000 km',
+    servicioId: 'sv6',
     estado: 'pendiente',
   },
   {
@@ -323,7 +683,7 @@ export const citas: Cita[] = [
     fecha: '2026-05-23',
     hora: '14:00',
     duracionMin: 60,
-    servicio: 'Aire acondicionado',
+    servicioId: 'sv7',
     estado: 'confirmada',
   },
   {
@@ -333,23 +693,29 @@ export const citas: Cita[] = [
     fecha: '2026-05-15',
     hora: '16:00',
     duracionMin: 90,
-    servicio: 'Reparación suspensión',
+    servicioId: 'sv8',
     estado: 'completada',
   },
 ];
 
-export const ordenes: OrdenMantenimiento[] = [
+export const ordenesTrabajo: OrdenTrabajo[] = [
   {
     id: 'o1',
     numero: 'OT-2026-0142',
+    tipo: 'reparacion',
     clienteId: 'c1',
     vehiculoId: 'v2',
-    staffId: 's1',
+    usuarioId: 'u1',
     estado: 'en_progreso',
     descripcion: 'Sustitución pastillas y discos de freno delanteros',
     fechaEntrada: '2026-05-18',
     fechaEstimada: '2026-05-20',
     totalEstimado: 485.5,
+    piezasUsadas: [
+      { piezaId: 'p3', cantidad: 1, precioUnitario: 45.0 },
+      { piezaId: 'p4', cantidad: 1, precioUnitario: 89.0 },
+    ],
+    ordenComercialId: 'oc1',
     checklist: [
       { item: 'Diagnóstico inicial', completado: true },
       { item: 'Desmontaje ruedas', completado: true },
@@ -364,14 +730,17 @@ export const ordenes: OrdenMantenimiento[] = [
   {
     id: 'o2',
     numero: 'OT-2026-0143',
+    tipo: 'reparacion',
     clienteId: 'c6',
     vehiculoId: 'v8',
-    staffId: 's2',
+    usuarioId: 'u2',
     estado: 'esperando_piezas',
     descripcion: 'Reparación turbocompresor',
     fechaEntrada: '2026-05-17',
     fechaEstimada: '2026-05-24',
     totalEstimado: 1250.0,
+    piezasUsadas: [{ piezaId: 'p7', cantidad: 1, precioUnitario: 890.0 }],
+    ordenComercialId: 'oc2',
     checklist: [
       { item: 'Diagnóstico OBD', completado: true },
       { item: 'Desmontaje turbo', completado: true },
@@ -386,33 +755,40 @@ export const ordenes: OrdenMantenimiento[] = [
   {
     id: 'o3',
     numero: 'OT-2026-0144',
+    tipo: 'mantenimiento',
     clienteId: 'c3',
     vehiculoId: 'v5',
-    staffId: 's3',
+    usuarioId: 'u3',
     estado: 'pendiente',
     descripcion: 'Cambio kit distribución',
     fechaEntrada: '2026-05-19',
     fechaEstimada: '2026-05-21',
     totalEstimado: 890.0,
+    piezasUsadas: [{ piezaId: 'p8', cantidad: 1, precioUnitario: 245.0 }],
     checklist: [
       { item: 'Confirmar piezas en stock', completado: false },
       { item: 'Reservar bahía', completado: false },
     ],
-    timeline: [
-      { fecha: '2026-05-19 07:45', estado: 'pendiente', nota: 'Orden creada' },
-    ],
+    timeline: [{ fecha: '2026-05-19 07:45', estado: 'pendiente', nota: 'Orden creada' }],
   },
   {
     id: 'o4',
     numero: 'OT-2026-0138',
+    tipo: 'mantenimiento',
     clienteId: 'c2',
     vehiculoId: 'v4',
-    staffId: 's1',
+    usuarioId: 'u1',
     estado: 'completado',
     descripcion: 'Revisión general 150.000 km',
     fechaEntrada: '2026-05-12',
     fechaEstimada: '2026-05-14',
     totalEstimado: 320.0,
+    piezasUsadas: [
+      { piezaId: 'p1', cantidad: 1, precioUnitario: 12.5 },
+      { piezaId: 'p2', cantidad: 1, precioUnitario: 18.0 },
+      { piezaId: 'p5', cantidad: 1, precioUnitario: 32.0 },
+    ],
+    ordenComercialId: 'oc4',
     checklist: [
       { item: 'Cambio aceite', completado: true },
       { item: 'Filtros', completado: true },
@@ -427,87 +803,324 @@ export const ordenes: OrdenMantenimiento[] = [
   {
     id: 'o5',
     numero: 'OT-2026-0145',
+    tipo: 'reparacion',
     clienteId: 'c5',
     vehiculoId: 'v7',
-    staffId: 's4',
+    usuarioId: 'u4',
     estado: 'en_progreso',
     descripcion: 'Instalación sistema multimedia',
     fechaEntrada: '2026-05-19',
     fechaEstimada: '2026-05-19',
     totalEstimado: 275.0,
+    piezasUsadas: [{ piezaId: 'p10', cantidad: 1, precioUnitario: 199.0 }],
     checklist: [
       { item: 'Desmontaje panel', completado: true },
       { item: 'Cableado', completado: false },
     ],
-    timeline: [
-      { fecha: '2026-05-19 09:15', estado: 'en_progreso', nota: 'Instalación iniciada' },
+    timeline: [{ fecha: '2026-05-19 09:15', estado: 'en_progreso', nota: 'Instalación iniciada' }],
+  },
+  {
+    id: 'o6',
+    numero: 'OT-2026-0146',
+    tipo: 'mantenimiento',
+    clienteId: 'c1',
+    vehiculoId: 'v1',
+    usuarioId: 'u3',
+    estado: 'pendiente',
+    descripcion: 'Mantenimiento programado 85.000 km',
+    fechaEntrada: '2026-05-20',
+    fechaEstimada: '2026-05-22',
+    totalEstimado: 410.0,
+    piezasUsadas: [
+      { piezaId: 'p1', cantidad: 1, precioUnitario: 12.5 },
+      { piezaId: 'p5', cantidad: 1, precioUnitario: 32.0 },
+      { piezaId: 'p9', cantidad: 1, precioUnitario: 28.0 },
     ],
+    checklist: [
+      { item: 'Verificar stock piezas', completado: true },
+      { item: 'Programar bahía', completado: false },
+    ],
+    timeline: [{ fecha: '2026-05-20 08:00', estado: 'pendiente', nota: 'Orden programada' }],
   },
 ];
 
-export const staff: StaffMember[] = [
+export const ordenesComerciales: OrdenComercial[] = [
   {
-    id: 's1',
-    nombre: 'Roberto Díaz',
-    email: 'roberto.diaz@mppro.local',
-    telefono: '+34 600 111 222',
-    rol: 'Mecánico senior',
-    activo: true,
-    ordenesActivas: 2,
+    id: 'oc1',
+    numero: 'COT-2026-0089',
+    tipo: 'cotizacion',
+    estado: 'enviada',
+    clienteId: 'c1',
+    vehiculoId: 'v2',
+    ordenTrabajoId: 'o1',
+    fecha: '2026-05-18',
+    validezHasta: '2026-06-18',
+    lineas: [
+      {
+        id: 'l1',
+        tipo: 'servicio',
+        referenciaId: 'sv2',
+        descripcion: 'Revisión frenos',
+        cantidad: 1,
+        precioUnitario: 45.0,
+        subtotal: 45.0,
+      },
+      {
+        id: 'l2',
+        tipo: 'pieza',
+        referenciaId: 'p3',
+        descripcion: 'Pastillas freno delanteras',
+        cantidad: 1,
+        precioUnitario: 45.0,
+        subtotal: 45.0,
+      },
+      {
+        id: 'l3',
+        tipo: 'pieza',
+        referenciaId: 'p4',
+        descripcion: 'Discos freno delanteros (par)',
+        cantidad: 1,
+        precioUnitario: 89.0,
+        subtotal: 89.0,
+      },
+    ],
+    subtotal: 179.0,
+    iva: 37.59,
+    total: 216.59,
   },
   {
-    id: 's2',
-    nombre: 'Elena Vargas',
-    email: 'elena.vargas@mppro.local',
-    telefono: '+34 600 222 333',
-    rol: 'Mecánica especialista motor',
-    activo: true,
-    ordenesActivas: 1,
+    id: 'oc2',
+    numero: 'COT-2026-0090',
+    tipo: 'cotizacion',
+    estado: 'aceptada',
+    clienteId: 'c6',
+    vehiculoId: 'v8',
+    ordenTrabajoId: 'o2',
+    fecha: '2026-05-17',
+    validezHasta: '2026-06-17',
+    lineas: [
+      {
+        id: 'l4',
+        tipo: 'servicio',
+        referenciaId: 'sv3',
+        descripcion: 'Diagnóstico motor',
+        cantidad: 1,
+        precioUnitario: 65.0,
+        subtotal: 65.0,
+      },
+      {
+        id: 'l5',
+        tipo: 'pieza',
+        referenciaId: 'p7',
+        descripcion: 'Turbocompresor OEM',
+        cantidad: 1,
+        precioUnitario: 890.0,
+        subtotal: 890.0,
+      },
+    ],
+    subtotal: 955.0,
+    iva: 200.55,
+    total: 1155.55,
   },
   {
-    id: 's3',
-    nombre: 'David Molina',
-    email: 'david.molina@mppro.local',
-    telefono: '+34 600 333 444',
-    rol: 'Mecánico',
-    activo: true,
-    ordenesActivas: 1,
+    id: 'oc3',
+    numero: 'COT-2026-0091',
+    tipo: 'cotizacion',
+    estado: 'borrador',
+    clienteId: 'c3',
+    vehiculoId: 'v5',
+    ordenTrabajoId: 'o3',
+    fecha: '2026-05-19',
+    validezHasta: '2026-06-19',
+    lineas: [
+      {
+        id: 'l6',
+        tipo: 'pieza',
+        referenciaId: 'p8',
+        descripcion: 'Kit distribución completo',
+        cantidad: 1,
+        precioUnitario: 245.0,
+        subtotal: 245.0,
+      },
+    ],
+    subtotal: 245.0,
+    iva: 51.45,
+    total: 296.45,
   },
   {
-    id: 's4',
-    nombre: 'Sofía Herrera',
-    email: 'sofia.herrera@mppro.local',
-    telefono: '+34 600 444 555',
-    rol: 'Electricista automoción',
-    activo: true,
-    ordenesActivas: 1,
+    id: 'oc4',
+    numero: 'FAC-2026-0045',
+    tipo: 'factura',
+    estado: 'pagada',
+    clienteId: 'c2',
+    vehiculoId: 'v4',
+    ordenTrabajoId: 'o4',
+    fecha: '2026-05-14',
+    lineas: [
+      {
+        id: 'l7',
+        tipo: 'servicio',
+        referenciaId: 'sv6',
+        descripcion: 'Mantenimiento 80.000 km',
+        cantidad: 1,
+        precioUnitario: 320.0,
+        subtotal: 320.0,
+      },
+      {
+        id: 'l8',
+        tipo: 'pieza',
+        referenciaId: 'p1',
+        descripcion: 'Filtro de aceite',
+        cantidad: 1,
+        precioUnitario: 12.5,
+        subtotal: 12.5,
+      },
+      {
+        id: 'l9',
+        tipo: 'pieza',
+        referenciaId: 'p5',
+        descripcion: 'Aceite 5W30 5L',
+        cantidad: 1,
+        precioUnitario: 32.0,
+        subtotal: 32.0,
+      },
+    ],
+    subtotal: 364.5,
+    iva: 76.55,
+    total: 441.05,
   },
   {
-    id: 's5',
-    nombre: 'Antonio Reyes',
-    email: 'antonio.reyes@mppro.local',
-    telefono: '+34 600 555 666',
-    rol: 'Recepcionista',
-    activo: true,
-    ordenesActivas: 0,
+    id: 'oc5',
+    numero: 'FAC-2026-0046',
+    tipo: 'factura',
+    estado: 'emitida',
+    clienteId: 'c6',
+    vehiculoId: 'v8',
+    ordenTrabajoId: 'o2',
+    fecha: '2026-05-18',
+    lineas: [
+      {
+        id: 'l10',
+        tipo: 'servicio',
+        referenciaId: 'sv3',
+        descripcion: 'Diagnóstico motor',
+        cantidad: 1,
+        precioUnitario: 65.0,
+        subtotal: 65.0,
+      },
+      {
+        id: 'l11',
+        tipo: 'pieza',
+        referenciaId: 'p7',
+        descripcion: 'Turbocompresor OEM',
+        cantidad: 1,
+        precioUnitario: 890.0,
+        subtotal: 890.0,
+      },
+    ],
+    subtotal: 955.0,
+    iva: 200.55,
+    total: 1155.55,
   },
   {
-    id: 's6',
-    nombre: 'Carmen López',
-    email: 'carmen.lopez@mppro.local',
-    telefono: '+34 600 666 777',
-    rol: 'Administración',
-    activo: true,
-    ordenesActivas: 0,
+    id: 'oc6',
+    numero: 'FAC-2026-0047',
+    tipo: 'factura',
+    estado: 'emitida',
+    clienteId: 'c1',
+    vehiculoId: 'v2',
+    fecha: '2026-05-10',
+    lineas: [
+      {
+        id: 'l12',
+        tipo: 'servicio',
+        referenciaId: 'sv1',
+        descripcion: 'Cambio aceite y filtros',
+        cantidad: 1,
+        precioUnitario: 89.0,
+        subtotal: 89.0,
+      },
+    ],
+    subtotal: 89.0,
+    iva: 18.69,
+    total: 107.69,
   },
   {
-    id: 's7',
-    nombre: 'Francisco Núñez',
-    email: 'francisco.nunez@mppro.local',
-    telefono: '+34 600 777 888',
-    rol: 'Mecánico',
-    activo: false,
-    ordenesActivas: 0,
+    id: 'oc7',
+    numero: 'COT-2026-0092',
+    tipo: 'cotizacion',
+    estado: 'rechazada',
+    clienteId: 'c5',
+    vehiculoId: 'v7',
+    fecha: '2026-05-08',
+    validezHasta: '2026-06-08',
+    lineas: [
+      {
+        id: 'l13',
+        tipo: 'servicio',
+        referenciaId: 'sv7',
+        descripcion: 'Aire acondicionado',
+        cantidad: 1,
+        precioUnitario: 75.0,
+        subtotal: 75.0,
+      },
+    ],
+    subtotal: 75.0,
+    iva: 15.75,
+    total: 90.75,
+  },
+];
+
+export const pagos: Pago[] = [
+  {
+    id: 'pg1',
+    ordenComercialId: 'oc4',
+    monto: 441.05,
+    fecha: '2026-05-15',
+    metodo: 'transferencia',
+    referencia: 'TRF-20260515-0045',
+  },
+  {
+    id: 'pg2',
+    ordenComercialId: 'oc5',
+    monto: 500.0,
+    fecha: '2026-05-18',
+    metodo: 'tarjeta',
+    referencia: 'TXN-8847291',
+    notas: 'Anticipo 43% del total',
+  },
+  {
+    id: 'pg3',
+    ordenComercialId: 'oc6',
+    monto: 107.69,
+    fecha: '2026-05-11',
+    metodo: 'efectivo',
+  },
+  {
+    id: 'pg4',
+    ordenComercialId: 'oc5',
+    monto: 300.0,
+    fecha: '2026-05-19',
+    metodo: 'transferencia',
+    referencia: 'TRF-20260519-0046',
+    notas: 'Segundo pago parcial',
+  },
+  {
+    id: 'pg5',
+    ordenComercialId: 'oc4',
+    monto: 0,
+    fecha: '2026-05-14',
+    metodo: 'transferencia',
+    notas: 'Registro anulado — duplicado',
+  },
+  {
+    id: 'pg6',
+    ordenComercialId: 'oc6',
+    monto: 50.0,
+    fecha: '2026-05-10',
+    metodo: 'tarjeta',
+    referencia: 'TXN-7721034',
+    notas: 'Depósito previo al servicio',
   },
 ];
 
@@ -542,6 +1155,13 @@ export const actividadReciente: ActividadReciente[] = [
   },
   {
     id: 'a5',
+    tipo: 'pago',
+    titulo: 'Pago registrado',
+    descripcion: '500 € — FAC-2026-0046 (Javier Ortega)',
+    fecha: '2026-05-18 16:20',
+  },
+  {
+    id: 'a6',
     tipo: 'cita',
     titulo: 'Cita completada',
     descripcion: 'Reparación suspensión — Ana Fernández',
@@ -562,12 +1182,16 @@ export const citasPorDia = [
 export const dashboardStats = {
   citasHoy: 3,
   citasHoyTrend: '+2',
-  otsAbiertas: 4,
+  otsAbiertas: 5,
   otsAbiertasTrend: '-1',
   clientesActivos: clientes.filter((c) => c.estado === 'activo').length,
   clientesTrend: '+3',
   ingresosMes: 28450,
   ingresosTrend: '+12%',
+  piezasStockBajo: piezas.filter((p) => p.stock <= p.stockMinimo).length,
+  facturasPendientes: ordenesComerciales.filter(
+    (o) => o.tipo === 'factura' && o.estado === 'emitida'
+  ).length,
 };
 
 export function getClienteById(id: string): Cliente | undefined {
@@ -586,16 +1210,69 @@ export function getCitasByClienteId(clienteId: string): Cita[] {
   return citas.filter((c) => c.clienteId === clienteId);
 }
 
-export function getOrdenesByClienteId(clienteId: string): OrdenMantenimiento[] {
-  return ordenes.filter((o) => o.clienteId === clienteId);
+export function getOrdenesTrabajoByClienteId(clienteId: string): OrdenTrabajo[] {
+  return ordenesTrabajo.filter((o) => o.clienteId === clienteId);
 }
 
-export function getOrdenById(id: string): OrdenMantenimiento | undefined {
-  return ordenes.find((o) => o.id === id);
+export function getOrdenTrabajoById(id: string): OrdenTrabajo | undefined {
+  return ordenesTrabajo.find((o) => o.id === id);
 }
 
-export function getStaffById(id: string): StaffMember | undefined {
-  return staff.find((s) => s.id === id);
+export function getUsuarioById(id: string): Usuario | undefined {
+  return usuarios.find((u) => u.id === id);
+}
+
+export function getRolById(id: string): Rol | undefined {
+  return roles.find((r) => r.id === id);
+}
+
+export function getRolNombre(rolId: string): string {
+  return getRolById(rolId)?.nombre ?? 'Sin rol';
+}
+
+export function getPiezaById(id: string): Pieza | undefined {
+  return piezas.find((p) => p.id === id);
+}
+
+export function getServicioById(id: string): Servicio | undefined {
+  return servicios.find((s) => s.id === id);
+}
+
+export function getServicioNombre(servicioId: string): string {
+  return getServicioById(servicioId)?.nombre ?? 'Servicio desconocido';
+}
+
+export function getOrdenComercialById(id: string): OrdenComercial | undefined {
+  return ordenesComerciales.find((o) => o.id === id);
+}
+
+export function getOrdenesComercialesByClienteId(clienteId: string): OrdenComercial[] {
+  return ordenesComerciales.filter((o) => o.clienteId === clienteId);
+}
+
+export function getOrdenComercialByOrdenTrabajoId(
+  ordenTrabajoId: string
+): OrdenComercial | undefined {
+  return ordenesComerciales.find((o) => o.ordenTrabajoId === ordenTrabajoId);
+}
+
+export function getPagosByOrdenComercialId(ordenComercialId: string): Pago[] {
+  return pagos.filter((p) => p.ordenComercialId === ordenComercialId && p.monto > 0);
+}
+
+export function getPagosByClienteId(clienteId: string): Pago[] {
+  const ordenIds = ordenesComerciales
+    .filter((o) => o.clienteId === clienteId)
+    .map((o) => o.id);
+  return pagos.filter((p) => ordenIds.includes(p.ordenComercialId) && p.monto > 0);
+}
+
+export function getTotalPagado(ordenComercialId: string): number {
+  return getPagosByOrdenComercialId(ordenComercialId).reduce((sum, p) => sum + p.monto, 0);
+}
+
+export function getUsuariosByRolId(rolId: string): Usuario[] {
+  return usuarios.filter((u) => u.rolId === rolId);
 }
 
 export function getClienteNombre(clienteId: string): string {
@@ -607,11 +1284,20 @@ export function getVehiculoLabel(vehiculoId: string): string {
   return v ? `${v.marca} ${v.modelo} (${v.matricula})` : 'Desconocido';
 }
 
+export function getPiezaNombre(piezaId: string): string {
+  return getPiezaById(piezaId)?.nombre ?? 'Pieza desconocida';
+}
+
 export const ordenEstadoLabels: Record<OrdenEstado, string> = {
   pendiente: 'Pendiente',
   en_progreso: 'En progreso',
   esperando_piezas: 'Esperando piezas',
   completado: 'Completado',
+};
+
+export const ordenTrabajoTipoLabels: Record<OrdenTrabajoTipo, string> = {
+  mantenimiento: 'Mantenimiento',
+  reparacion: 'Reparación',
 };
 
 export const citaEstadoLabels: Record<CitaEstado, string> = {
@@ -620,3 +1306,40 @@ export const citaEstadoLabels: Record<CitaEstado, string> = {
   completada: 'Completada',
   cancelada: 'Cancelada',
 };
+
+export const ordenComercialTipoLabels: Record<OrdenComercialTipo, string> = {
+  cotizacion: 'Cotización',
+  factura: 'Factura',
+};
+
+export const cotizacionEstadoLabels: Record<CotizacionEstado, string> = {
+  borrador: 'Borrador',
+  enviada: 'Enviada',
+  aceptada: 'Aceptada',
+  rechazada: 'Rechazada',
+  convertida: 'Convertida',
+};
+
+export const facturaEstadoLabels: Record<FacturaEstado, string> = {
+  borrador: 'Borrador',
+  emitida: 'Emitida',
+  pagada: 'Pagada',
+  vencida: 'Vencida',
+  anulada: 'Anulada',
+};
+
+export function getOrdenComercialEstadoLabel(orden: OrdenComercial): string {
+  if (orden.tipo === 'cotizacion') {
+    return cotizacionEstadoLabels[orden.estado as CotizacionEstado];
+  }
+  return facturaEstadoLabels[orden.estado as FacturaEstado];
+}
+
+export const pagoMetodoLabels: Record<PagoMetodo, string> = {
+  efectivo: 'Efectivo',
+  tarjeta: 'Tarjeta',
+  transferencia: 'Transferencia',
+};
+
+export const piezaCategorias = [...new Set(piezas.map((p) => p.categoria))];
+export const servicioCategorias = [...new Set(servicios.map((s) => s.categoria))];
