@@ -95,8 +95,8 @@ export function VehiculosTable() {
     resetKey,
   });
 
-  function handleCreate(values: VehiculoFormValues) {
-    const created = createVehiculo(values);
+  async function handleCreate(values: VehiculoFormValues) {
+    const created = await createVehiculo(values);
     if (created) {
       toast.success('Vehículo registrado', {
         description: `${created.marca} ${created.modelo} (${created.matricula})`,
@@ -109,9 +109,9 @@ export function VehiculosTable() {
     }
   }
 
-  function handleUpdate(values: VehiculoFormValues) {
+  async function handleUpdate(values: VehiculoFormValues) {
     if (!editingVehiculo) return;
-    const ok = updateVehiculo(editingVehiculo.id, values);
+    const ok = await updateVehiculo(editingVehiculo.id, values);
     if (ok) {
       toast.success('Vehículo actualizado');
       setEditingVehiculo(null);
@@ -127,17 +127,21 @@ export function VehiculosTable() {
       setDeactivateTarget(vehiculo);
       return;
     }
-    toggleVehiculoEstado(vehiculo.id);
-    toast.success('Vehículo activado');
+    void toggleVehiculoEstado(vehiculo.id).then((next) => {
+      if (next) toast.success('Vehículo activado');
+    });
   }
 
   function confirmDeactivate() {
     if (!deactivateTarget) return;
-    toggleVehiculoEstado(deactivateTarget.id);
-    toast.success('Vehículo dado de baja', {
-      description: `${deactivateTarget.matricula} ya no aparecerá como activo.`,
+    void toggleVehiculoEstado(deactivateTarget.id).then((next) => {
+      if (next) {
+        toast.success('Vehículo dado de baja', {
+          description: `${deactivateTarget.matricula} ya no aparecerá como activo.`,
+        });
+      }
+      setDeactivateTarget(null);
     });
-    setDeactivateTarget(null);
   }
 
   return (

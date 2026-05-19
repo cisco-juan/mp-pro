@@ -69,9 +69,15 @@ interface ClienteDetalleViewProps {
 }
 
 export function ClienteDetalleView({ id }: ClienteDetalleViewProps) {
-  const { getCliente, getVehiculosByCliente, updateCliente, toggleClienteEstado } =
+  const { getCliente, getVehiculosByCliente, updateCliente, toggleClienteEstado, loading } =
     useClientesStore();
   const clienteOrNull = getCliente(id);
+
+  if (loading) {
+    return (
+      <p className="text-sm text-muted-foreground">Cargando cliente…</p>
+    );
+  }
 
   if (!clienteOrNull) {
     notFound();
@@ -123,11 +129,13 @@ function ClienteDetalleContent({
     ? `${documentoTipoLabels[cliente.documento.tipo]} ${cliente.documento.numero}`
     : null;
 
-  function handleUpdate(values: ClienteFormValues) {
-    const ok = updateCliente(id, values);
+  async function handleUpdate(values: ClienteFormValues) {
+    const ok = await updateCliente(id, values);
     if (ok) {
       toast.success('Cliente actualizado');
       setOpenEdit(false);
+    } else {
+      toast.error('No se pudo actualizar el cliente');
     }
   }
 
@@ -136,14 +144,16 @@ function ClienteDetalleContent({
       setOpenDeactivate(true);
       return;
     }
-    toggleClienteEstado(id);
-    toast.success('Cliente activado');
+    void toggleClienteEstado(id).then((next) => {
+      if (next) toast.success('Cliente activado');
+    });
   }
 
   function confirmDeactivate() {
-    toggleClienteEstado(id);
-    toast.success('Cliente desactivado');
-    setOpenDeactivate(false);
+    void toggleClienteEstado(id).then((next) => {
+      if (next) toast.success('Cliente desactivado');
+      setOpenDeactivate(false);
+    });
   }
 
   return (

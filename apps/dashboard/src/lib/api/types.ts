@@ -36,3 +36,50 @@ export type RolFormValues = {
   descripcion: string;
   permisos?: string[];
 };
+
+export type ClienteEstado = 'activo' | 'inactivo';
+export type VehiculoEstado = 'activo' | 'inactivo';
+export type MantenimientoUrgencia = 'ok' | 'proximo' | 'vencido';
+export type DocumentoTipo = 'dni' | 'nie' | 'cif' | 'pasaporte';
+
+export type ClienteDireccion = {
+  linea1: string;
+  linea2?: string;
+  ciudad: string;
+  codigoPostal: string;
+  provincia?: string;
+};
+
+export type ClienteDocumento = {
+  tipo: DocumentoTipo;
+  numero: string;
+};
+
+export type Cliente = {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  telefonoSecundario?: string;
+  empresa?: string;
+  direccion?: ClienteDireccion;
+  documento?: ClienteDocumento;
+  estado: ClienteEstado;
+  vehiculosCount: number;
+  ultimaVisita: string;
+  notas?: string;
+};
+
+export type Vehiculo = {
+  id: string;
+  clienteId: string;
+  matricula: string;
+  marca: string;
+  modelo: string;
+  anio: number;
+  color: string;
+  kilometraje: number;
+  proximoMantenimiento: string;
+  urgencia: MantenimientoUrgencia;
+  estado: VehiculoEstado;
+};

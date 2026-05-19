@@ -63,8 +63,15 @@ interface VehiculoDetalleViewProps {
 }
 
 export function VehiculoDetalleView({ id }: VehiculoDetalleViewProps) {
-  const { getVehiculo, getCliente, updateVehiculo, toggleVehiculoEstado } = useClientesStore();
+  const { getVehiculo, getCliente, updateVehiculo, toggleVehiculoEstado, loading } =
+    useClientesStore();
   const vehiculoOrNull = getVehiculo(id);
+
+  if (loading) {
+    return (
+      <p className="text-sm text-muted-foreground">Cargando vehículo…</p>
+    );
+  }
 
   if (!vehiculoOrNull) {
     notFound();
@@ -122,8 +129,8 @@ function VehiculoDetalleContent({
   const [openEdit, setOpenEdit] = useState(false);
   const [openDeactivate, setOpenDeactivate] = useState(false);
 
-  function handleUpdate(values: VehiculoFormValues) {
-    const ok = updateVehiculo(id, values);
+  async function handleUpdate(values: VehiculoFormValues) {
+    const ok = await updateVehiculo(id, values);
     if (ok) {
       toast.success('Vehículo actualizado');
       setOpenEdit(false);
@@ -137,14 +144,16 @@ function VehiculoDetalleContent({
       setOpenDeactivate(true);
       return;
     }
-    toggleVehiculoEstado(id);
-    toast.success('Vehículo activado');
+    void toggleVehiculoEstado(id).then((next) => {
+      if (next) toast.success('Vehículo activado');
+    });
   }
 
   function confirmDeactivate() {
-    toggleVehiculoEstado(id);
-    toast.success('Vehículo dado de baja');
-    setOpenDeactivate(false);
+    void toggleVehiculoEstado(id).then((next) => {
+      if (next) toast.success('Vehículo dado de baja');
+      setOpenDeactivate(false);
+    });
   }
 
   return (

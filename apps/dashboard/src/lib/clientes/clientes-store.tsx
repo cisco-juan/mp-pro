@@ -4,332 +4,226 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import {
-  clientes as initialClientes,
-  vehiculos as initialVehiculos,
-  computeUrgencia,
-  formValuesToClienteData,
-  formValuesToVehiculoData,
-  type Cliente,
-  type ClienteFormValues,
-  type Vehiculo,
-  type VehiculoFormValues,
-} from '@/lib/mock-data';
-
-type State = {
-  clientes: Cliente[];
-  vehiculos: Vehiculo[];
-};
-
-type Action =
-  | { type: 'SET_CLIENTES'; payload: Cliente[] }
-  | { type: 'SET_VEHICULOS'; payload: Vehiculo[] }
-  | { type: 'ADD_CLIENTE'; cliente: Cliente; vehiculo?: Vehiculo }
-  | { type: 'UPDATE_CLIENTE'; id: string; data: Partial<Cliente> }
-  | { type: 'TOGGLE_CLIENTE_ESTADO'; id: string }
-  | { type: 'ADD_VEHICULO'; vehiculo: Vehiculo }
-  | { type: 'UPDATE_VEHICULO'; id: string; data: Partial<Vehiculo>; previousClienteId?: string }
-  | { type: 'TOGGLE_VEHICULO_ESTADO'; id: string }
-  | { type: 'SYNC_VEHICULOS_COUNT'; clienteId: string; count: number };
-
-function syncClienteVehiculosCount(
-  clientes: Cliente[],
-  clienteId: string,
-  vehiculos: Vehiculo[]
-): Cliente[] {
-  const count = vehiculos.filter((v) => v.clienteId === clienteId).length;
-  return clientes.map((c) =>
-    c.id === clienteId ? { ...c, vehiculosCount: count } : c
-  );
-}
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'SET_CLIENTES':
-      return { ...state, clientes: action.payload };
-    case 'SET_VEHICULOS':
-      return { ...state, vehiculos: action.payload };
-    case 'ADD_CLIENTE': {
-      let clientes = [...state.clientes, action.cliente];
-      let vehiculos = state.vehiculos;
-      if (action.vehiculo) {
-        vehiculos = [...vehiculos, action.vehiculo];
-        clientes = syncClienteVehiculosCount(clientes, action.cliente.id, vehiculos);
-      }
-      return { clientes, vehiculos };
-    }
-    case 'UPDATE_CLIENTE':
-      return {
-        ...state,
-        clientes: state.clientes.map((c) =>
-          c.id === action.id ? { ...c, ...action.data } : c
-        ),
-      };
-    case 'TOGGLE_CLIENTE_ESTADO':
-      return {
-        ...state,
-        clientes: state.clientes.map((c) =>
-          c.id === action.id
-            ? { ...c, estado: c.estado === 'activo' ? 'inactivo' : 'activo' }
-            : c
-        ),
-      };
-    case 'ADD_VEHICULO': {
-      const vehiculos = [...state.vehiculos, action.vehiculo];
-      return {
-        vehiculos,
-        clientes: syncClienteVehiculosCount(state.clientes, action.vehiculo.clienteId, vehiculos),
-      };
-    }
-    case 'UPDATE_VEHICULO': {
-      const vehiculos = state.vehiculos.map((v) =>
-        v.id === action.id ? { ...v, ...action.data } : v
-      );
-      let clientes = state.clientes;
-      if (action.previousClienteId && action.previousClienteId !== action.data.clienteId) {
-        clientes = syncClienteVehiculosCount(clientes, action.previousClienteId, vehiculos);
-      }
-      if (action.data.clienteId) {
-        clientes = syncClienteVehiculosCount(clientes, action.data.clienteId, vehiculos);
-      }
-      return { clientes, vehiculos };
-    }
-    case 'TOGGLE_VEHICULO_ESTADO':
-      return {
-        ...state,
-        vehiculos: state.vehiculos.map((v) =>
-          v.id === action.id
-            ? { ...v, estado: v.estado === 'activo' ? 'inactivo' : 'activo' }
-            : v
-        ),
-      };
-    case 'SYNC_VEHICULOS_COUNT':
-      return {
-        ...state,
-        clientes: state.clientes.map((c) =>
-          c.id === action.clienteId ? { ...c, vehiculosCount: action.count } : c
-        ),
-      };
-    default:
-      return state;
-  }
-}
-
-function generateId(prefix: string, existing: { id: string }[]): string {
-  let n = existing.length + 1;
-  let id = `${prefix}${n}`;
-  while (existing.some((item) => item.id === id)) {
-    n += 1;
-    id = `${prefix}${n}`;
-  }
-  return id;
-}
-
-function buildVehiculoFromClienteForm(
-  clienteId: string,
-  values: ClienteFormValues,
-  existing: Vehiculo[]
-): Vehiculo {
-  const today = new Date();
-  const proximo = new Date(today);
-  proximo.setMonth(proximo.getMonth() + 6);
-  const proximoMantenimiento = proximo.toISOString().slice(0, 10);
-
-  return {
-    id: generateId('v', existing),
-    clienteId,
-    matricula: values.vehiculoMatricula.trim().toUpperCase(),
-    marca: values.vehiculoMarca.trim(),
-    modelo: values.vehiculoModelo.trim(),
-    anio: parseInt(values.vehiculoAnio, 10) || new Date().getFullYear(),
-    color: values.vehiculoColor.trim() || '—',
-    kilometraje: parseInt(values.vehiculoKilometraje.replace(/\D/g, ''), 10) || 0,
-    proximoMantenimiento,
-    urgencia: computeUrgencia(proximoMantenimiento),
-    estado: 'activo',
-  };
-}
-
-function buildVehiculoFromVehiculoForm(
-  values: VehiculoFormValues,
-  existing: Vehiculo[]
-): Vehiculo {
-  const data = formValuesToVehiculoData(values);
-  return {
-    id: generateId('v', existing),
-    ...data,
-    urgencia: computeUrgencia(data.proximoMantenimiento),
-    estado: 'activo',
-  };
-}
+  createClienteApi,
+  createVehiculoApi,
+  fetchClientes,
+  fetchVehiculos,
+  toggleClienteActivoApi,
+  toggleVehiculoActivoApi,
+  updateClienteApi,
+  updateVehiculoApi,
+} from '@/lib/api/clientes-api';
+import type { Cliente, Vehiculo } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/auth-store';
+import type { ClienteFormValues, VehiculoFormValues } from '@/lib/mock-data';
 
 export type ClientesContextValue = {
   clientes: Cliente[];
   vehiculos: Vehiculo[];
+  loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
   getCliente: (id: string) => Cliente | undefined;
   getClienteNombre: (clienteId: string) => string;
   getVehiculo: (id: string) => Vehiculo | undefined;
   getVehiculoLabel: (vehiculoId: string) => string;
   getVehiculosByCliente: (clienteId: string) => Vehiculo[];
-  createCliente: (values: ClienteFormValues) => Cliente | null;
-  updateCliente: (id: string, values: ClienteFormValues) => boolean;
-  toggleClienteEstado: (id: string) => ClienteEstado | null;
-  createVehiculo: (values: VehiculoFormValues) => Vehiculo | null;
-  updateVehiculo: (id: string, values: VehiculoFormValues) => boolean;
-  toggleVehiculoEstado: (id: string) => VehiculoEstado | null;
+  createCliente: (values: ClienteFormValues) => Promise<Cliente | null>;
+  updateCliente: (id: string, values: ClienteFormValues) => Promise<boolean>;
+  toggleClienteEstado: (id: string) => Promise<Cliente['estado'] | null>;
+  createVehiculo: (values: VehiculoFormValues) => Promise<Vehiculo | null>;
+  updateVehiculo: (id: string, values: VehiculoFormValues) => Promise<boolean>;
+  toggleVehiculoEstado: (id: string) => Promise<Vehiculo['estado'] | null>;
 };
-
-type ClienteEstado = Cliente['estado'];
-type VehiculoEstado = Vehiculo['estado'];
 
 const ClientesContext = createContext<ClientesContextValue | null>(null);
 
 export function ClientesProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, {
-    clientes: initialClientes,
-    vehiculos: initialVehiculos,
-  });
+  const { isAuthenticated } = useAuth();
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) {
+      setClientes([]);
+      setVehiculos([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const [clientesData, vehiculosData] = await Promise.all([
+        fetchClientes(),
+        fetchVehiculos(),
+      ]);
+      setClientes(clientesData);
+      setVehiculos(vehiculosData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar clientes');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   const getCliente = useCallback(
-    (id: string) => state.clientes.find((c) => c.id === id),
-    [state.clientes]
+    (id: string) => clientes.find((c) => c.id === id),
+    [clientes],
   );
 
   const getVehiculo = useCallback(
-    (id: string) => state.vehiculos.find((v) => v.id === id),
-    [state.vehiculos]
+    (id: string) => vehiculos.find((v) => v.id === id),
+    [vehiculos],
   );
 
   const getClienteNombre = useCallback(
     (clienteId: string) =>
-      state.clientes.find((c) => c.id === clienteId)?.nombre ?? 'Cliente desconocido',
-    [state.clientes]
+      clientes.find((c) => c.id === clienteId)?.nombre ?? 'Cliente desconocido',
+    [clientes],
   );
 
   const getVehiculoLabel = useCallback(
     (vehiculoId: string) => {
-      const v = state.vehiculos.find((item) => item.id === vehiculoId);
+      const v = vehiculos.find((item) => item.id === vehiculoId);
       return v ? `${v.marca} ${v.modelo} (${v.matricula})` : 'Desconocido';
     },
-    [state.vehiculos]
+    [vehiculos],
   );
 
   const getVehiculosByCliente = useCallback(
-    (clienteId: string) => state.vehiculos.filter((v) => v.clienteId === clienteId),
-    [state.vehiculos]
+    (clienteId: string) => vehiculos.filter((v) => v.clienteId === clienteId),
+    [vehiculos],
   );
 
   const createCliente = useCallback(
-    (values: ClienteFormValues): Cliente | null => {
-      const data = formValuesToClienteData(values);
-      const withVehiculo = values.registrarVehiculo;
-      const today = new Date().toISOString().slice(0, 10);
-
-      const cliente: Cliente = {
-        id: generateId('c', state.clientes),
-        ...data,
-        estado: 'activo',
-        vehiculosCount: 0,
-        ultimaVisita: today,
-      };
-
-      const vehiculo = withVehiculo
-        ? buildVehiculoFromClienteForm(cliente.id, values, state.vehiculos)
-        : undefined;
-
-      if (vehiculo) {
-        cliente.vehiculosCount = 1;
+    async (values: ClienteFormValues): Promise<Cliente | null> => {
+      try {
+        const created = await createClienteApi(values);
+        setClientes((prev) => [...prev, created].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+        if (values.registrarVehiculo) {
+          const vehiculosData = await fetchVehiculos();
+          setVehiculos(vehiculosData);
+        }
+        return created;
+      } catch {
+        return null;
       }
-
-      dispatch({ type: 'ADD_CLIENTE', cliente, vehiculo });
-      return cliente;
     },
-    [state.clientes, state.vehiculos]
+    [],
   );
 
   const updateCliente = useCallback(
-    (id: string, values: ClienteFormValues): boolean => {
-      const existing = state.clientes.find((c) => c.id === id);
-      if (!existing) return false;
-
-      const data = formValuesToClienteData(values);
-      dispatch({ type: 'UPDATE_CLIENTE', id, data });
-      return true;
+    async (id: string, values: ClienteFormValues): Promise<boolean> => {
+      try {
+        const updated = await updateClienteApi(id, values);
+        setClientes((prev) =>
+          prev.map((c) => (c.id === id ? updated : c)).sort((a, b) => a.nombre.localeCompare(b.nombre)),
+        );
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [state.clientes]
+    [],
   );
 
   const toggleClienteEstado = useCallback(
-    (id: string): ClienteEstado | null => {
-      const cliente = state.clientes.find((c) => c.id === id);
-      if (!cliente) return null;
-      dispatch({ type: 'TOGGLE_CLIENTE_ESTADO', id });
-      return cliente.estado === 'activo' ? 'inactivo' : 'activo';
+    async (id: string): Promise<Cliente['estado'] | null> => {
+      try {
+        const updated = await toggleClienteActivoApi(id);
+        setClientes((prev) => prev.map((c) => (c.id === id ? updated : c)));
+        return updated.estado;
+      } catch {
+        return null;
+      }
     },
-    [state.clientes]
+    [],
   );
 
   const createVehiculo = useCallback(
-    (values: VehiculoFormValues): Vehiculo | null => {
-      const matricula = values.matricula.trim().toUpperCase();
-      if (state.vehiculos.some((v) => v.matricula.toUpperCase() === matricula)) {
+    async (values: VehiculoFormValues): Promise<Vehiculo | null> => {
+      try {
+        const created = await createVehiculoApi(values);
+        setVehiculos((prev) => [...prev, created]);
+        setClientes((prev) =>
+          prev.map((c) =>
+            c.id === created.clienteId
+              ? { ...c, vehiculosCount: c.vehiculosCount + 1 }
+              : c,
+          ),
+        );
+        return created;
+      } catch {
         return null;
       }
-
-      const vehiculo = buildVehiculoFromVehiculoForm(values, state.vehiculos);
-      dispatch({ type: 'ADD_VEHICULO', vehiculo });
-      return vehiculo;
     },
-    [state.vehiculos]
+    [],
   );
 
   const updateVehiculo = useCallback(
-    (id: string, values: VehiculoFormValues): boolean => {
-      const existing = state.vehiculos.find((v) => v.id === id);
+    async (id: string, values: VehiculoFormValues): Promise<boolean> => {
+      const existing = vehiculos.find((v) => v.id === id);
       if (!existing) return false;
 
-      const matricula = values.matricula.trim().toUpperCase();
-      if (
-        state.vehiculos.some(
-          (v) => v.id !== id && v.matricula.toUpperCase() === matricula
-        )
-      ) {
+      try {
+        const updated = await updateVehiculoApi(id, values);
+        setVehiculos((prev) => prev.map((v) => (v.id === id ? updated : v)));
+
+        if (updated.clienteId !== existing.clienteId) {
+          setClientes((prev) =>
+            prev.map((c) => {
+              if (c.id === existing.clienteId) {
+                return { ...c, vehiculosCount: Math.max(0, c.vehiculosCount - 1) };
+              }
+              if (c.id === updated.clienteId) {
+                return { ...c, vehiculosCount: c.vehiculosCount + 1 };
+              }
+              return c;
+            }),
+          );
+        }
+
+        return true;
+      } catch {
         return false;
       }
-
-      const data = formValuesToVehiculoData(values);
-      dispatch({
-        type: 'UPDATE_VEHICULO',
-        id,
-        data: {
-          ...data,
-          urgencia: computeUrgencia(data.proximoMantenimiento),
-        },
-        previousClienteId: existing.clienteId,
-      });
-      return true;
     },
-    [state.vehiculos]
+    [vehiculos],
   );
 
   const toggleVehiculoEstado = useCallback(
-    (id: string): VehiculoEstado | null => {
-      const vehiculo = state.vehiculos.find((v) => v.id === id);
-      if (!vehiculo) return null;
-      dispatch({ type: 'TOGGLE_VEHICULO_ESTADO', id });
-      return vehiculo.estado === 'activo' ? 'inactivo' : 'activo';
+    async (id: string): Promise<Vehiculo['estado'] | null> => {
+      try {
+        const updated = await toggleVehiculoActivoApi(id);
+        setVehiculos((prev) => prev.map((v) => (v.id === id ? updated : v)));
+        return updated.estado;
+      } catch {
+        return null;
+      }
     },
-    [state.vehiculos]
+    [],
   );
 
   const value = useMemo(
     () => ({
-      clientes: state.clientes,
-      vehiculos: state.vehiculos,
+      clientes,
+      vehiculos,
+      loading,
+      error,
+      reload,
       getCliente,
       getClienteNombre,
       getVehiculo,
@@ -343,8 +237,11 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       toggleVehiculoEstado,
     }),
     [
-      state.clientes,
-      state.vehiculos,
+      clientes,
+      vehiculos,
+      loading,
+      error,
+      reload,
       getCliente,
       getClienteNombre,
       getVehiculo,
@@ -356,7 +253,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       createVehiculo,
       updateVehiculo,
       toggleVehiculoEstado,
-    ]
+    ],
   );
 
   return (
@@ -373,7 +270,7 @@ export function useClientesStore() {
 }
 
 export function formatClienteDireccion(
-  direccion: Cliente['direccion']
+  direccion: Cliente['direccion'],
 ): string | null {
   if (!direccion) return null;
   const parts = [
