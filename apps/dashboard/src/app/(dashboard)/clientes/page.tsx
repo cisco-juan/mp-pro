@@ -1,6 +1,5 @@
 import { PageHeader } from '@/components/layout/page-header';
 import { ClientesTable } from '@/components/clientes/clientes-table';
-import { clientes } from '@/lib/mock-data';
 
 export const metadata = {
   title: 'Clientes',
@@ -13,7 +12,7 @@ export default function ClientesPage() {
         title="Clientes"
         description="Gestiona la cartera de clientes de tu taller"
       />
-      <ClientesTable data={clientes} />
+      <ClientesTable />
     </div>
   );
 }

@@ -13,18 +13,147 @@ export type FacturaEstado = 'borrador' | 'emitida' | 'pagada' | 'vencida' | 'anu
 export type OrdenComercialEstado = CotizacionEstado | FacturaEstado;
 export type LineaOrdenTipo = 'servicio' | 'pieza';
 export type PagoMetodo = 'efectivo' | 'tarjeta' | 'transferencia';
+export type DocumentoTipo = 'dni' | 'nie' | 'cif' | 'pasaporte';
+
+export interface ClienteDireccion {
+  linea1: string;
+  linea2?: string;
+  ciudad: string;
+  codigoPostal: string;
+  provincia?: string;
+}
+
+export interface ClienteDocumento {
+  tipo: DocumentoTipo;
+  numero: string;
+}
 
 export interface Cliente {
   id: string;
   nombre: string;
   email: string;
   telefono: string;
+  telefonoSecundario?: string;
   empresa?: string;
+  direccion?: ClienteDireccion;
+  documento?: ClienteDocumento;
   estado: ClienteEstado;
   vehiculosCount: number;
   ultimaVisita: string;
   notas?: string;
 }
+
+export interface ClienteFormValues {
+  nombre: string;
+  email: string;
+  telefono: string;
+  telefonoSecundario: string;
+  empresa: string;
+  notas: string;
+  documentoTipo: DocumentoTipo | '';
+  documentoNumero: string;
+  direccionLinea1: string;
+  direccionLinea2: string;
+  ciudad: string;
+  codigoPostal: string;
+  provincia: string;
+  registrarVehiculo: boolean;
+  vehiculoMatricula: string;
+  vehiculoMarca: string;
+  vehiculoModelo: string;
+  vehiculoAnio: string;
+  vehiculoColor: string;
+  vehiculoKilometraje: string;
+}
+
+export const emptyClienteFormValues: ClienteFormValues = {
+  nombre: '',
+  email: '',
+  telefono: '',
+  telefonoSecundario: '',
+  empresa: '',
+  notas: '',
+  documentoTipo: '',
+  documentoNumero: '',
+  direccionLinea1: '',
+  direccionLinea2: '',
+  ciudad: '',
+  codigoPostal: '',
+  provincia: '',
+  registrarVehiculo: false,
+  vehiculoMatricula: '',
+  vehiculoMarca: '',
+  vehiculoModelo: '',
+  vehiculoAnio: '',
+  vehiculoColor: '',
+  vehiculoKilometraje: '',
+};
+
+export function clienteToFormValues(cliente: Cliente): ClienteFormValues {
+  return {
+    nombre: cliente.nombre,
+    email: cliente.email,
+    telefono: cliente.telefono,
+    telefonoSecundario: cliente.telefonoSecundario ?? '',
+    empresa: cliente.empresa ?? '',
+    notas: cliente.notas ?? '',
+    documentoTipo: cliente.documento?.tipo ?? '',
+    documentoNumero: cliente.documento?.numero ?? '',
+    direccionLinea1: cliente.direccion?.linea1 ?? '',
+    direccionLinea2: cliente.direccion?.linea2 ?? '',
+    ciudad: cliente.direccion?.ciudad ?? '',
+    codigoPostal: cliente.direccion?.codigoPostal ?? '',
+    provincia: cliente.direccion?.provincia ?? '',
+    registrarVehiculo: false,
+    vehiculoMatricula: '',
+    vehiculoMarca: '',
+    vehiculoModelo: '',
+    vehiculoAnio: '',
+    vehiculoColor: '',
+    vehiculoKilometraje: '',
+  };
+}
+
+export function formValuesToClienteData(
+  values: ClienteFormValues
+): Omit<Cliente, 'id' | 'estado' | 'vehiculosCount' | 'ultimaVisita'> {
+  const direccion =
+    values.direccionLinea1.trim() && values.ciudad.trim() && values.codigoPostal.trim()
+      ? {
+          linea1: values.direccionLinea1.trim(),
+          linea2: values.direccionLinea2.trim() || undefined,
+          ciudad: values.ciudad.trim(),
+          codigoPostal: values.codigoPostal.trim(),
+          provincia: values.provincia.trim() || undefined,
+        }
+      : undefined;
+
+  const documento =
+    values.documentoTipo && values.documentoNumero.trim()
+      ? {
+          tipo: values.documentoTipo as DocumentoTipo,
+          numero: values.documentoNumero.trim(),
+        }
+      : undefined;
+
+  return {
+    nombre: values.nombre.trim(),
+    email: values.email.trim(),
+    telefono: values.telefono.trim(),
+    telefonoSecundario: values.telefonoSecundario.trim() || undefined,
+    empresa: values.empresa.trim() || undefined,
+    direccion,
+    documento,
+    notas: values.notas.trim() || undefined,
+  };
+}
+
+export const documentoTipoLabels: Record<DocumentoTipo, string> = {
+  dni: 'DNI',
+  nie: 'NIE',
+  cif: 'CIF',
+  pasaporte: 'Pasaporte',
+};
 
 export interface Vehiculo {
   id: string;
@@ -443,7 +572,15 @@ export const clientes: Cliente[] = [
     nombre: 'María García López',
     email: 'maria.garcia@email.com',
     telefono: '+34 612 345 678',
+    telefonoSecundario: '+34 912 345 678',
     empresa: 'Transportes García',
+    direccion: {
+      linea1: 'Polígono Industrial Norte, 12',
+      ciudad: 'Madrid',
+      codigoPostal: '28050',
+      provincia: 'Madrid',
+    },
+    documento: { tipo: 'cif', numero: 'B12345678' },
     estado: 'activo',
     vehiculosCount: 3,
     ultimaVisita: '2026-05-15',
@@ -454,6 +591,13 @@ export const clientes: Cliente[] = [
     nombre: 'Carlos Ruiz Martín',
     email: 'carlos.ruiz@email.com',
     telefono: '+34 623 456 789',
+    direccion: {
+      linea1: 'Calle Mayor 45, 3ºB',
+      ciudad: 'Alcalá de Henares',
+      codigoPostal: '28801',
+      provincia: 'Madrid',
+    },
+    documento: { tipo: 'dni', numero: '12345678A' },
     estado: 'activo',
     vehiculosCount: 1,
     ultimaVisita: '2026-05-10',
@@ -463,7 +607,16 @@ export const clientes: Cliente[] = [
     nombre: 'Ana Fernández Soto',
     email: 'ana.fernandez@email.com',
     telefono: '+34 634 567 890',
+    telefonoSecundario: '+34 916 567 890',
     empresa: 'Fernández Logistics',
+    direccion: {
+      linea1: 'Av. de la Industria 200',
+      linea2: 'Nave 4',
+      ciudad: 'Getafe',
+      codigoPostal: '28903',
+      provincia: 'Madrid',
+    },
+    documento: { tipo: 'cif', numero: 'B87654321' },
     estado: 'activo',
     vehiculosCount: 5,
     ultimaVisita: '2026-05-18',
@@ -473,6 +626,7 @@ export const clientes: Cliente[] = [
     nombre: 'Pedro Jiménez Vega',
     email: 'pedro.jimenez@email.com',
     telefono: '+34 645 678 901',
+    documento: { tipo: 'dni', numero: '87654321B' },
     estado: 'inactivo',
     vehiculosCount: 2,
     ultimaVisita: '2026-01-20',
@@ -482,6 +636,13 @@ export const clientes: Cliente[] = [
     nombre: 'Laura Méndez Costa',
     email: 'laura.mendez@email.com',
     telefono: '+34 656 789 012',
+    telefonoSecundario: '+34 600 111 222',
+    direccion: {
+      linea1: 'Plaza España 8',
+      ciudad: 'Leganés',
+      codigoPostal: '28911',
+    },
+    documento: { tipo: 'nie', numero: 'X1234567L' },
     estado: 'activo',
     vehiculosCount: 1,
     ultimaVisita: '2026-05-12',
@@ -492,6 +653,13 @@ export const clientes: Cliente[] = [
     email: 'javier.ortega@email.com',
     telefono: '+34 667 890 123',
     empresa: 'Ortega Motors',
+    direccion: {
+      linea1: 'Ctra. de Toledo km 12',
+      ciudad: 'Móstoles',
+      codigoPostal: '28935',
+      provincia: 'Madrid',
+    },
+    documento: { tipo: 'cif', numero: 'B11223344' },
     estado: 'activo',
     vehiculosCount: 4,
     ultimaVisita: '2026-05-17',
@@ -501,6 +669,12 @@ export const clientes: Cliente[] = [
     nombre: 'Isabel Torres Ríos',
     email: 'isabel.torres@email.com',
     telefono: '+34 678 901 234',
+    direccion: {
+      linea1: 'Calle del Sol 22',
+      ciudad: 'Fuenlabrada',
+      codigoPostal: '28944',
+    },
+    documento: { tipo: 'dni', numero: '99887766C' },
     estado: 'activo',
     vehiculosCount: 2,
     ultimaVisita: '2026-05-08',
