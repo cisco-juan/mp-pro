@@ -21,3 +21,28 @@
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+## Cursor Cloud specific instructions
+
+### Services overview
+
+| Service | Command | Port | Notes |
+|---------|---------|------|-------|
+| PostgreSQL | `docker compose up -d` | 5432 | Credentials: mp_pro/mp_pro/mp_pro |
+| NestJS API | `npm run dev:api` | 3000 | Depends on DB being up + migrations |
+| Next.js Dashboard | `npm run dev:dashboard` | 3001* | *Uses 3001 when API occupies 3000 |
+
+### Startup sequence
+
+1. Ensure Docker daemon is running (`sudo dockerd` if not already up)
+2. `docker compose up -d` (PostgreSQL)
+3. `npx nx run database:prisma-generate` (only needed after schema changes)
+4. `npm run dev:api` then `npm run dev:dashboard`
+
+### Gotchas
+
+- A stale `pnpm-lock.yaml` may appear in the repo. If Nx fails with "Failed to parse pnpm lockfile" or `.modules.yaml` errors, delete `pnpm-lock.yaml` — the project uses npm (see `package-lock.json`).
+- The `database` library uses `rootDir: "."` in its tsconfig because Prisma 7 generates `.ts` files that must be compiled. The build target creates a forwarding `dist/index.js` barrel so the `@nx/js:node` serve executor can resolve the package at runtime.
+- The API e2e tests (`api-e2e`) require `ts-node` for Jest config parsing, which may not be installed. Core lint/typecheck/build verification: `npm run verify`.
+- The Docker daemon must be started manually in Cloud Agent VMs: `sudo dockerd &>/tmp/dockerd.log &` — wait a few seconds, then `sudo chmod 666 /var/run/docker.sock` for non-root access.
+- Environment variables: copy `.env.example` → `.env` at root and `libs/database/.env.example` → `libs/database/.env`. Both need `DATABASE_URL=postgresql://mp_pro:mp_pro@localhost:5432/mp_pro`.
