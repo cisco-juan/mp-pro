@@ -304,6 +304,158 @@ const INVENTORY_PARTS = [
   },
 ] as const;
 
+const WORK_ORDERS = [
+  {
+    id: 'o1',
+    numero: 'OT-2026-0142',
+    tipo: 'reparacion' as const,
+    clientId: 'c1',
+    vehicleId: 'v2',
+    assignedUserId: 'u1',
+    estado: 'en_progreso' as const,
+    descripcion: 'Sustitución pastillas y discos de freno delanteros',
+    fechaEntrada: new Date('2026-05-18'),
+    fechaEstimada: new Date('2026-05-20'),
+    totalEstimado: 134,
+    ordenComercialId: 'oc1',
+    parts: [
+      { inventoryPartId: 'p3', cantidad: 1, precioUnitario: 45 },
+      { inventoryPartId: 'p4', cantidad: 1, precioUnitario: 89 },
+    ],
+    checklist: [
+      { orden: 0, item: 'Diagnóstico inicial', completado: true },
+      { orden: 1, item: 'Desmontaje', completado: true },
+      { orden: 2, item: 'Sustitución / reparación', completado: false },
+      { orden: 3, item: 'Montaje', completado: false },
+      { orden: 4, item: 'Prueba en banco', completado: false },
+    ],
+    timeline: [
+      {
+        fecha: new Date('2026-05-18T08:30:00'),
+        estado: 'pendiente' as const,
+        nota: 'Vehículo recibido',
+      },
+      {
+        fecha: new Date('2026-05-18T10:00:00'),
+        estado: 'en_progreso' as const,
+        nota: 'Inicio reparación',
+      },
+    ],
+  },
+  {
+    id: 'o2',
+    numero: 'OT-2026-0143',
+    tipo: 'reparacion' as const,
+    clientId: 'c2',
+    vehicleId: 'v3',
+    assignedUserId: 'u2',
+    estado: 'esperando_piezas' as const,
+    descripcion: 'Reparación turbocompresor',
+    fechaEntrada: new Date('2026-05-17'),
+    fechaEstimada: new Date('2026-05-24'),
+    totalEstimado: 890,
+    ordenComercialId: 'oc2',
+    parts: [{ inventoryPartId: 'p7', cantidad: 1, precioUnitario: 890 }],
+    checklist: [
+      { orden: 0, item: 'Diagnóstico inicial', completado: true },
+      { orden: 1, item: 'Desmontaje', completado: true },
+      { orden: 2, item: 'Sustitución / reparación', completado: false },
+      { orden: 3, item: 'Montaje', completado: false },
+      { orden: 4, item: 'Prueba en banco', completado: false },
+    ],
+    timeline: [
+      {
+        fecha: new Date('2026-05-17T09:00:00'),
+        estado: 'pendiente' as const,
+        nota: 'Ingreso taller',
+      },
+      {
+        fecha: new Date('2026-05-17T14:00:00'),
+        estado: 'en_progreso' as const,
+        nota: 'Diagnóstico confirmado',
+      },
+      {
+        fecha: new Date('2026-05-18T11:00:00'),
+        estado: 'esperando_piezas' as const,
+        nota: 'Pedido turbo enviado',
+      },
+    ],
+  },
+  {
+    id: 'o3',
+    numero: 'OT-2026-0144',
+    tipo: 'mantenimiento' as const,
+    clientId: 'c1',
+    vehicleId: 'v1',
+    assignedUserId: 'u3',
+    estado: 'pendiente' as const,
+    descripcion: 'Cambio kit distribución',
+    fechaEntrada: new Date('2026-05-19'),
+    fechaEstimada: new Date('2026-05-21'),
+    totalEstimado: 245,
+    parts: [{ inventoryPartId: 'p8', cantidad: 1, precioUnitario: 245 }],
+    checklist: [
+      { orden: 0, item: 'Confirmar piezas en stock', completado: false },
+      { orden: 1, item: 'Reservar bahía', completado: false },
+      { orden: 2, item: 'Cambio aceite', completado: false },
+      { orden: 3, item: 'Filtros', completado: false },
+      { orden: 4, item: 'Revisión general', completado: false },
+      { orden: 5, item: 'Prueba en banco', completado: false },
+    ],
+    timeline: [
+      {
+        fecha: new Date('2026-05-19T07:45:00'),
+        estado: 'pendiente' as const,
+        nota: 'Orden creada',
+      },
+    ],
+  },
+  {
+    id: 'o4',
+    numero: 'OT-2026-0138',
+    tipo: 'mantenimiento' as const,
+    clientId: 'c2',
+    vehicleId: 'v3',
+    assignedUserId: 'u1',
+    estado: 'completado' as const,
+    descripcion: 'Revisión general 150.000 km',
+    fechaEntrada: new Date('2026-05-12'),
+    fechaEstimada: new Date('2026-05-14'),
+    totalEstimado: 62.5,
+    ordenComercialId: 'oc4',
+    parts: [
+      { inventoryPartId: 'p1', cantidad: 1, precioUnitario: 12.5 },
+      { inventoryPartId: 'p2', cantidad: 1, precioUnitario: 18 },
+      { inventoryPartId: 'p5', cantidad: 1, precioUnitario: 32 },
+    ],
+    checklist: [
+      { orden: 0, item: 'Confirmar piezas en stock', completado: true },
+      { orden: 1, item: 'Reservar bahía', completado: true },
+      { orden: 2, item: 'Cambio aceite', completado: true },
+      { orden: 3, item: 'Filtros', completado: true },
+      { orden: 4, item: 'Revisión general', completado: true },
+      { orden: 5, item: 'Prueba en banco', completado: true },
+    ],
+    timeline: [
+      {
+        fecha: new Date('2026-05-12T08:00:00'),
+        estado: 'pendiente' as const,
+        nota: 'Ingreso',
+      },
+      {
+        fecha: new Date('2026-05-13T16:00:00'),
+        estado: 'en_progreso' as const,
+        nota: 'Trabajo en curso',
+      },
+      {
+        fecha: new Date('2026-05-14T12:00:00'),
+        estado: 'completado' as const,
+        nota: 'Entregado al cliente',
+      },
+    ],
+  },
+] as const;
+
 async function main(): Promise<void> {
   const prisma = createPrismaClient();
   const passwordHash = await hashPassword(DEFAULT_PASSWORD);
@@ -393,6 +545,65 @@ async function main(): Promise<void> {
         ubicacion: part.ubicacion,
         estado: part.estado,
       },
+    });
+  }
+
+  for (const order of WORK_ORDERS) {
+    const { parts, checklist, timeline, ...orderData } = order;
+
+    await prisma.workOrder.upsert({
+      where: { id: order.id },
+      create: {
+        ...orderData,
+        partsUsed: {
+          create: parts.map((part) => ({
+            inventoryPartId: part.inventoryPartId,
+            cantidad: part.cantidad,
+            precioUnitario: part.precioUnitario,
+          })),
+        },
+        checklist: {
+          create: checklist.map((item) => ({
+            orden: item.orden,
+            item: item.item,
+            completado: item.completado,
+          })),
+        },
+        timeline: {
+          create: timeline.map((entry) => ({
+            fecha: entry.fecha,
+            estado: entry.estado,
+            nota: entry.nota,
+          })),
+        },
+      },
+      update: {
+        numero: order.numero,
+        tipo: order.tipo,
+        clientId: order.clientId,
+        vehicleId: order.vehicleId,
+        assignedUserId: order.assignedUserId,
+        estado: order.estado,
+        descripcion: order.descripcion,
+        fechaEntrada: order.fechaEntrada,
+        fechaEstimada: order.fechaEstimada,
+        totalEstimado: order.totalEstimado,
+        ordenComercialId: order.ordenComercialId,
+      },
+    });
+  }
+
+  const mechanicIds = ['u1', 'u2', 'u3', 'u4'] as const;
+  for (const userId of mechanicIds) {
+    const ordenesActivas = await prisma.workOrder.count({
+      where: {
+        assignedUserId: userId,
+        estado: { not: 'completado' },
+      },
+    });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { ordenesActivas },
     });
   }
 

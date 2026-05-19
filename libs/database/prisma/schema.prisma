@@ -39,6 +39,7 @@ model User {
   roleId            String         @map("role_id")
   role              Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
   refreshTokens     RefreshToken[]
+  assignedWorkOrders WorkOrder[]   @relation("WorkOrderAssignedUser")
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
 
@@ -93,6 +94,7 @@ model Client {
   direccionCodigoPostal String?       @map("direccion_codigo_postal")
   direccionProvincia   String?        @map("direccion_provincia")
   vehicles             Vehicle[]
+  workOrders           WorkOrder[]
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
@@ -111,6 +113,7 @@ model Vehicle {
   kilometraje          Int            @default(0)
   proximoMantenimiento DateTime       @map("proximo_mantenimiento") @db.Date
   estado               VehiculoEstado @default(activo)
+  workOrders           WorkOrder[]
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
@@ -133,9 +136,89 @@ model InventoryPart {
   precioUnitario Decimal             @map("precio_unitario") @db.Decimal(10, 2)
   ubicacion      String?
   estado         InventoryPartEstado @default(activo)
+  workOrderParts WorkOrderPart[]
   createdAt      DateTime            @default(now()) @map("created_at")
   updatedAt      DateTime            @updatedAt @map("updated_at")
 
   @@index([categoria])
   @@map("inventory_parts")
+}
+
+enum WorkOrderEstado {
+  pendiente
+  en_progreso
+  esperando_piezas
+  completado
+}
+
+enum WorkOrderTipo {
+  mantenimiento
+  reparacion
+}
+
+model WorkOrder {
+  id               String                    @id @default(cuid())
+  numero           String                    @unique
+  tipo             WorkOrderTipo
+  clientId         String                    @map("client_id")
+  client           Client                    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  vehicleId        String                    @map("vehicle_id")
+  vehicle          Vehicle                   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  assignedUserId   String                    @map("assigned_user_id")
+  assignedUser     User                      @relation("WorkOrderAssignedUser", fields: [assignedUserId], references: [id], onDelete: Restrict)
+  estado           WorkOrderEstado           @default(pendiente)
+  descripcion      String
+  fechaEntrada     DateTime                  @map("fecha_entrada") @db.Date
+  fechaEstimada    DateTime                  @map("fecha_estimada") @db.Date
+  totalEstimado    Decimal                   @default(0) @map("total_estimado") @db.Decimal(10, 2)
+  ordenComercialId String?                   @map("orden_comercial_id")
+  partsUsed        WorkOrderPart[]
+  checklist        WorkOrderChecklistItem[]
+  timeline         WorkOrderTimelineEntry[]
+  createdAt        DateTime                  @default(now()) @map("created_at")
+  updatedAt        DateTime                  @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@index([vehicleId])
+  @@index([assignedUserId])
+  @@index([estado])
+  @@map("work_orders")
+}
+
+model WorkOrderPart {
+  id              String        @id @default(cuid())
+  workOrderId     String        @map("work_order_id")
+  workOrder       WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  inventoryPartId String        @map("inventory_part_id")
+  inventoryPart   InventoryPart @relation(fields: [inventoryPartId], references: [id], onDelete: Restrict)
+  cantidad        Int
+  precioUnitario  Decimal       @map("precio_unitario") @db.Decimal(10, 2)
+
+  @@index([workOrderId])
+  @@index([inventoryPartId])
+  @@map("work_order_parts")
+}
+
+model WorkOrderChecklistItem {
+  id          String    @id @default(cuid())
+  workOrderId String    @map("work_order_id")
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  orden       Int       @default(0)
+  item        String
+  completado  Boolean   @default(false)
+
+  @@index([workOrderId])
+  @@map("work_order_checklist_items")
+}
+
+model WorkOrderTimelineEntry {
+  id          String          @id @default(cuid())
+  workOrderId String          @map("work_order_id")
+  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  fecha       DateTime
+  estado      WorkOrderEstado
+  nota        String
+
+  @@index([workOrderId])
+  @@map("work_order_timeline_entries")
 }

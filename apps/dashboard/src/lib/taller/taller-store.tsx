@@ -4,75 +4,41 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import {
-  ordenesTrabajo as initialOrdenes,
-  formValuesToOrdenTrabajoData,
-  generateOrdenTrabajoId,
-  generateOrdenTrabajoNumero,
-  buildTimelineEntry,
-  buildChecklistFromTemplate,
-  computeTotalPiezas,
-  MOCK_TODAY,
-  ordenEstadoLabels,
-  type OrdenTrabajo,
-  type OrdenEstado,
-  type OrdenTrabajoFormValues,
-  type PiezaUsada,
-} from '@/lib/mock-data';
-
-type State = {
-  ordenesTrabajo: OrdenTrabajo[];
-};
-
-type Action =
-  | { type: 'ADD_ORDEN'; orden: OrdenTrabajo }
-  | { type: 'UPDATE_ORDEN'; id: string; data: Partial<OrdenTrabajo> }
-  | { type: 'UPDATE_ORDEN_ESTADO'; id: string; estado: OrdenEstado; nota: string };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'ADD_ORDEN':
-      return { ordenesTrabajo: [...state.ordenesTrabajo, action.orden] };
-    case 'UPDATE_ORDEN':
-      return {
-        ordenesTrabajo: state.ordenesTrabajo.map((o) =>
-          o.id === action.id ? { ...o, ...action.data } : o
-        ),
-      };
-    case 'UPDATE_ORDEN_ESTADO':
-      return {
-        ordenesTrabajo: state.ordenesTrabajo.map((o) => {
-          if (o.id !== action.id) return o;
-          return {
-            ...o,
-            estado: action.estado,
-            timeline: [
-              ...o.timeline,
-              buildTimelineEntry(action.estado, action.nota),
-            ],
-          };
-        }),
-      };
-    default:
-      return state;
-  }
-}
+  addPiezaOrdenApi,
+  assignMecanicoApi,
+  createOrdenTrabajoApi,
+  fetchOrdenesTrabajo,
+  linkOrdenComercialApi,
+  removePiezaOrdenApi,
+  setPiezasOrdenApi,
+  toggleChecklistItemApi,
+  updateOrdenEstadoApi,
+  updateOrdenTrabajoApi,
+} from '@/lib/api/taller-api';
+import type { OrdenTrabajo } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/auth-store';
+import type { OrdenEstado, OrdenTrabajoFormValues, PiezaUsada } from '@/lib/mock-data';
 
 export type TallerContextValue = {
   ordenesTrabajo: OrdenTrabajo[];
-  createOrdenTrabajo: (values: OrdenTrabajoFormValues) => OrdenTrabajo;
-  updateOrdenTrabajo: (id: string, values: OrdenTrabajoFormValues) => boolean;
-  updateOrdenEstado: (id: string, estado: OrdenEstado, nota?: string) => boolean;
-  toggleChecklistItem: (id: string, index: number) => boolean;
-  setPiezasUsadas: (id: string, piezas: PiezaUsada[]) => boolean;
-  addPieza: (id: string, pieza: PiezaUsada) => boolean;
-  removePieza: (id: string, piezaIndex: number) => boolean;
-  assignMecanico: (id: string, usuarioId: string) => boolean;
-  linkOrdenComercial: (id: string, ordenComercialId: string) => boolean;
+  loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
+  createOrdenTrabajo: (values: OrdenTrabajoFormValues) => Promise<OrdenTrabajo | null>;
+  updateOrdenTrabajo: (id: string, values: OrdenTrabajoFormValues) => Promise<boolean>;
+  updateOrdenEstado: (id: string, estado: OrdenEstado, nota?: string) => Promise<boolean>;
+  toggleChecklistItem: (id: string, index: number) => Promise<boolean>;
+  setPiezasUsadas: (id: string, piezas: PiezaUsada[]) => Promise<boolean>;
+  addPieza: (id: string, pieza: PiezaUsada) => Promise<boolean>;
+  removePieza: (id: string, piezaIndex: number) => Promise<boolean>;
+  assignMecanico: (id: string, usuarioId: string) => Promise<boolean>;
+  linkOrdenComercial: (id: string, ordenComercialId: string) => Promise<boolean>;
   getOrdenTrabajo: (id: string) => OrdenTrabajo | undefined;
   getOrdenesByCliente: (clienteId: string) => OrdenTrabajo[];
   getOrdenesByVehiculo: (vehiculoId: string) => OrdenTrabajo[];
@@ -82,193 +48,203 @@ export type TallerContextValue = {
 
 const TallerContext = createContext<TallerContextValue | null>(null);
 
+function upsertOrden(list: OrdenTrabajo[], orden: OrdenTrabajo): OrdenTrabajo[] {
+  const exists = list.some((item) => item.id === orden.id);
+  if (exists) {
+    return list.map((item) => (item.id === orden.id ? orden : item));
+  }
+  return [...list, orden];
+}
+
 export function TallerProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, {
-    ordenesTrabajo: initialOrdenes,
-  });
+  const { isAuthenticated } = useAuth();
+  const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenTrabajo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) {
+      setOrdenesTrabajo([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchOrdenesTrabajo();
+      setOrdenesTrabajo(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar órdenes de trabajo');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   const getOrdenTrabajo = useCallback(
-    (id: string) => state.ordenesTrabajo.find((o) => o.id === id),
-    [state.ordenesTrabajo]
+    (id: string) => ordenesTrabajo.find((o) => o.id === id),
+    [ordenesTrabajo],
   );
 
   const getOrdenesByCliente = useCallback(
     (clienteId: string) =>
-      state.ordenesTrabajo
+      ordenesTrabajo
         .filter((o) => o.clienteId === clienteId)
         .sort((a, b) => b.fechaEntrada.localeCompare(a.fechaEntrada)),
-    [state.ordenesTrabajo]
+    [ordenesTrabajo],
   );
 
   const getOrdenesByVehiculo = useCallback(
     (vehiculoId: string) =>
-      state.ordenesTrabajo
+      ordenesTrabajo
         .filter((o) => o.vehiculoId === vehiculoId)
         .sort((a, b) => b.fechaEntrada.localeCompare(a.fechaEntrada)),
-    [state.ordenesTrabajo]
+    [ordenesTrabajo],
   );
 
   const getOrdenesAbiertas = useCallback(
-    () => state.ordenesTrabajo.filter((o) => o.estado !== 'completado'),
-    [state.ordenesTrabajo]
+    () => ordenesTrabajo.filter((o) => o.estado !== 'completado'),
+    [ordenesTrabajo],
   );
 
   const getOrdenesAbiertasCount = useCallback(
-    () => state.ordenesTrabajo.filter((o) => o.estado !== 'completado').length,
-    [state.ordenesTrabajo]
+    () => ordenesTrabajo.filter((o) => o.estado !== 'completado').length,
+    [ordenesTrabajo],
   );
 
   const createOrdenTrabajo = useCallback(
-    (values: OrdenTrabajoFormValues): OrdenTrabajo => {
-      const data = formValuesToOrdenTrabajoData(values);
-      const orden: OrdenTrabajo = {
-        id: generateOrdenTrabajoId(state.ordenesTrabajo),
-        numero: generateOrdenTrabajoNumero(state.ordenesTrabajo),
-        ...data,
-        estado: 'pendiente',
-        totalEstimado: 0,
-        piezasUsadas: [],
-        checklist: buildChecklistFromTemplate(values.tipo),
-        timeline: [buildTimelineEntry('pendiente', 'Orden creada')],
-      };
-      dispatch({ type: 'ADD_ORDEN', orden });
-      return orden;
+    async (values: OrdenTrabajoFormValues): Promise<OrdenTrabajo | null> => {
+      try {
+        const created = await createOrdenTrabajoApi(values);
+        setOrdenesTrabajo((prev) =>
+          [...prev, created].sort((a, b) => b.fechaEntrada.localeCompare(a.fechaEntrada)),
+        );
+        return created;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al crear la orden');
+        return null;
+      }
     },
-    [state.ordenesTrabajo]
+    [],
   );
 
   const updateOrdenTrabajo = useCallback(
-    (id: string, values: OrdenTrabajoFormValues): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing) return false;
-
-      const data = formValuesToOrdenTrabajoData(values);
-      const tipoChanged = existing.tipo !== values.tipo;
-      dispatch({
-        type: 'UPDATE_ORDEN',
-        id,
-        data: {
-          ...data,
-          ...(tipoChanged ? { checklist: buildChecklistFromTemplate(values.tipo) } : {}),
-        },
-      });
-      return true;
+    async (id: string, values: OrdenTrabajoFormValues): Promise<boolean> => {
+      try {
+        const updated = await updateOrdenTrabajoApi(id, values);
+        setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al actualizar la orden');
+        return false;
+      }
     },
-    [state.ordenesTrabajo]
+    [],
   );
 
   const updateOrdenEstado = useCallback(
-    (id: string, estado: OrdenEstado, nota?: string): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
+    async (id: string, estado: OrdenEstado, nota?: string): Promise<boolean> => {
+      const existing = ordenesTrabajo.find((o) => o.id === id);
       if (!existing || existing.estado === estado) return false;
 
-      const defaultNota = `Estado actualizado a ${ordenEstadoLabels[estado].toLowerCase()}`;
-      dispatch({
-        type: 'UPDATE_ORDEN_ESTADO',
-        id,
-        estado,
-        nota: nota ?? defaultNota,
-      });
-      return true;
-    },
-    [state.ordenesTrabajo]
-  );
-
-  const toggleChecklistItem = useCallback(
-    (id: string, index: number): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing || index < 0 || index >= existing.checklist.length) return false;
-
-      const checklist = existing.checklist.map((item, i) =>
-        i === index ? { ...item, completado: !item.completado } : item
-      );
-      dispatch({ type: 'UPDATE_ORDEN', id, data: { checklist } });
-      return true;
-    },
-    [state.ordenesTrabajo]
-  );
-
-  const setPiezasUsadas = useCallback(
-    (id: string, piezas: PiezaUsada[]): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing) return false;
-
-      dispatch({
-        type: 'UPDATE_ORDEN',
-        id,
-        data: {
-          piezasUsadas: piezas,
-          totalEstimado: computeTotalPiezas(piezas),
-        },
-      });
-      return true;
-    },
-    [state.ordenesTrabajo]
-  );
-
-  const addPieza = useCallback(
-    (id: string, pieza: PiezaUsada): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing) return false;
-
-      const piezasUsadas = [...existing.piezasUsadas, pieza];
-      dispatch({
-        type: 'UPDATE_ORDEN',
-        id,
-        data: {
-          piezasUsadas,
-          totalEstimado: computeTotalPiezas(piezasUsadas),
-        },
-      });
-      return true;
-    },
-    [state.ordenesTrabajo]
-  );
-
-  const removePieza = useCallback(
-    (id: string, piezaIndex: number): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing || piezaIndex < 0 || piezaIndex >= existing.piezasUsadas.length) {
+      try {
+        const updated = await updateOrdenEstadoApi(id, estado, nota);
+        setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al cambiar el estado');
         return false;
       }
-
-      const piezasUsadas = existing.piezasUsadas.filter((_, i) => i !== piezaIndex);
-      dispatch({
-        type: 'UPDATE_ORDEN',
-        id,
-        data: {
-          piezasUsadas,
-          totalEstimado: computeTotalPiezas(piezasUsadas),
-        },
-      });
-      return true;
     },
-    [state.ordenesTrabajo]
+    [ordenesTrabajo],
   );
 
-  const assignMecanico = useCallback(
-    (id: string, usuarioId: string): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing) return false;
-      dispatch({ type: 'UPDATE_ORDEN', id, data: { usuarioId } });
+  const toggleChecklistItem = useCallback(async (id: string, index: number): Promise<boolean> => {
+    try {
+      const updated = await toggleChecklistItemApi(id, index);
+      setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
       return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar checklist');
+      return false;
+    }
+  }, []);
+
+  const setPiezasUsadas = useCallback(async (id: string, piezas: PiezaUsada[]): Promise<boolean> => {
+    try {
+      const updated = await setPiezasOrdenApi(id, piezas);
+      setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar piezas');
+      return false;
+    }
+  }, []);
+
+  const addPieza = useCallback(async (id: string, pieza: PiezaUsada): Promise<boolean> => {
+    try {
+      const updated = await addPiezaOrdenApi(id, pieza);
+      setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al añadir pieza');
+      return false;
+    }
+  }, []);
+
+  const removePieza = useCallback(
+    async (id: string, piezaIndex: number): Promise<boolean> => {
+      const existing = ordenesTrabajo.find((o) => o.id === id);
+      const line = existing?.piezasUsadas[piezaIndex];
+      if (!line?.lineId) return false;
+
+      try {
+        const updated = await removePiezaOrdenApi(id, line.lineId);
+        setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al quitar pieza');
+        return false;
+      }
     },
-    [state.ordenesTrabajo]
+    [ordenesTrabajo],
   );
+
+  const assignMecanico = useCallback(async (id: string, usuarioId: string): Promise<boolean> => {
+    try {
+      const updated = await assignMecanicoApi(id, usuarioId);
+      setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al asignar mecánico');
+      return false;
+    }
+  }, []);
 
   const linkOrdenComercial = useCallback(
-    (id: string, ordenComercialId: string): boolean => {
-      const existing = state.ordenesTrabajo.find((o) => o.id === id);
-      if (!existing) return false;
-      dispatch({ type: 'UPDATE_ORDEN', id, data: { ordenComercialId } });
-      return true;
+    async (id: string, ordenComercialId: string): Promise<boolean> => {
+      try {
+        const updated = await linkOrdenComercialApi(id, ordenComercialId);
+        setOrdenesTrabajo((prev) => upsertOrden(prev, updated));
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al vincular cotización');
+        return false;
+      }
     },
-    [state.ordenesTrabajo]
+    [],
   );
 
   const value = useMemo(
     () => ({
-      ordenesTrabajo: state.ordenesTrabajo,
+      ordenesTrabajo,
+      loading,
+      error,
+      reload,
       createOrdenTrabajo,
       updateOrdenTrabajo,
       updateOrdenEstado,
@@ -285,7 +261,10 @@ export function TallerProvider({ children }: { children: ReactNode }) {
       getOrdenesAbiertasCount,
     }),
     [
-      state.ordenesTrabajo,
+      ordenesTrabajo,
+      loading,
+      error,
+      reload,
       createOrdenTrabajo,
       updateOrdenTrabajo,
       updateOrdenEstado,
@@ -300,7 +279,7 @@ export function TallerProvider({ children }: { children: ReactNode }) {
       getOrdenesByVehiculo,
       getOrdenesAbiertas,
       getOrdenesAbiertasCount,
-    ]
+    ],
   );
 
   return <TallerContext.Provider value={value}>{children}</TallerContext.Provider>;
@@ -313,5 +292,3 @@ export function useTallerStore() {
   }
   return ctx;
 }
-
-export { MOCK_TODAY };

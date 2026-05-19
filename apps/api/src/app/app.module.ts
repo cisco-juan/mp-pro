@@ -11,6 +11,7 @@ import { RolesModule } from '../roles/roles.module';
 import { UsersModule } from '../users/users.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
+import { WorkOrdersModule } from '../work-orders/work-orders.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -28,6 +29,7 @@ import { AppService } from './app.service';
     ClientsModule,
     VehiclesModule,
     InventoryModule,
+    WorkOrdersModule,
   ],
   controllers: [AppController],
   providers: [

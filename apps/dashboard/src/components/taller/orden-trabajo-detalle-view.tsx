@@ -59,6 +59,7 @@ interface OrdenTrabajoDetalleViewProps {
 
 export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
   const {
+    loading,
     getOrdenTrabajo,
     updateOrdenTrabajo,
     updateOrdenEstado,
@@ -68,13 +69,17 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
     assignMecanico,
   } = useTallerStore();
   const { getVehiculoLabel, getClienteNombre } = useClientesStore();
-  const { getPiezaNombre, reservarStock } = useInventarioStore();
+  const { getPiezaNombre, reload: reloadInventario } = useInventarioStore();
   const { getUsuario, getUsuariosMecanicos } = useUsuariosStore();
 
   const orden = getOrdenTrabajo(id);
   const [editing, setEditing] = useState(false);
   const [openPieza, setOpenPieza] = useState(false);
   const [estadoTarget, setEstadoTarget] = useState<OrdenEstado | null>(null);
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Cargando orden de trabajo…</p>;
+  }
 
   if (!orden) {
     notFound();
@@ -89,23 +94,33 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
     0
   );
 
-  function handleUpdate(values: OrdenTrabajoFormValues) {
-    const ok = updateOrdenTrabajo(ordenData.id, values);
+  async function handleUpdate(values: OrdenTrabajoFormValues) {
+    const ok = await updateOrdenTrabajo(ordenData.id, values);
     if (ok) {
       toast.success('Orden actualizada');
       setEditing(false);
+    } else {
+      toast.error('No se pudo actualizar la orden');
     }
   }
 
-  function handleEstadoChange(estado: OrdenEstado) {
-    updateOrdenEstado(ordenData.id, estado);
-    toast.success(`OT ${ordenEstadoLabels[estado].toLowerCase()}`);
-    setEstadoTarget(null);
+  async function handleEstadoChange(estado: OrdenEstado) {
+    const ok = await updateOrdenEstado(ordenData.id, estado);
+    if (ok) {
+      toast.success(`OT ${ordenEstadoLabels[estado].toLowerCase()}`);
+      setEstadoTarget(null);
+    } else {
+      toast.error('No se pudo cambiar el estado');
+    }
   }
 
-  function handleMecanicoChange(usuarioId: string) {
-    assignMecanico(ordenData.id, usuarioId);
-    toast.success('Mecánico asignado');
+  async function handleMecanicoChange(usuarioId: string) {
+    const ok = await assignMecanico(ordenData.id, usuarioId);
+    if (ok) {
+      toast.success('Mecánico asignado');
+    } else {
+      toast.error('No se pudo asignar el mecánico');
+    }
   }
 
   return (
@@ -269,9 +284,14 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
                               variant="ghost"
                               size="icon"
                               className="size-8 text-destructive"
-                              onClick={() => {
-                                removePieza(ordenData.id, i);
-                                toast.success('Pieza eliminada');
+                              onClick={async () => {
+                                const ok = await removePieza(ordenData.id, i);
+                                if (ok) {
+                                  await reloadInventario();
+                                  toast.success('Pieza eliminada');
+                                } else {
+                                  toast.error('No se pudo eliminar la pieza');
+                                }
                               }}
                             >
                               <Trash2 className="size-4" />
@@ -310,7 +330,9 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
                     {canEdit ? (
                       <Checkbox
                         checked={item.completado}
-                        onCheckedChange={() => toggleChecklistItem(ordenData.id, i)}
+                        onCheckedChange={() => {
+                          void toggleChecklistItem(ordenData.id, i);
+                        }}
                       />
                     ) : (
                       <div
@@ -386,13 +408,13 @@ export function OrdenTrabajoDetalleView({ id }: OrdenTrabajoDetalleViewProps) {
         onOpenChange={setOpenPieza}
         piezasExistentes={ordenData.piezasUsadas}
         onAdd={async (pieza) => {
-          const ok = await reservarStock(pieza.piezaId, pieza.cantidad);
-          if (!ok) {
-            toast.error('Stock insuficiente en inventario');
-            return;
+          const ok = await addPieza(ordenData.id, pieza);
+          if (ok) {
+            await reloadInventario();
+            toast.success('Pieza añadida');
+          } else {
+            toast.error('No se pudo añadir la pieza (revisa el stock)');
           }
-          addPieza(ordenData.id, pieza);
-          toast.success('Pieza añadida');
         }}
       />
 

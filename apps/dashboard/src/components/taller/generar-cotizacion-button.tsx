@@ -28,12 +28,16 @@ export function GenerarCotizacionButton({
     (ordenComercialId ? getOrdenComercial(ordenComercialId) : undefined) ??
     getOrdenComercialByOrdenTrabajoId(ordenTrabajoId);
 
-  function handleGenerar() {
+  async function handleGenerar() {
     const orden = getOrdenTrabajo(ordenTrabajoId);
     if (!orden) return;
 
     const cotizacion = createCotizacionFromOrdenTrabajo(orden, getPiezaNombre);
-    linkOrdenComercial(ordenTrabajoId, cotizacion.id);
+    const linked = await linkOrdenComercial(ordenTrabajoId, cotizacion.id);
+    if (!linked) {
+      toast.error('No se pudo vincular la cotización con la orden');
+      return;
+    }
     toast.success('Cotización generada', {
       description: `Se ha creado ${cotizacion.numero} en borrador.`,
     });
