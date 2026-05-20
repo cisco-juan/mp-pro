@@ -46,3 +46,6 @@
 - The API e2e tests (`api-e2e`) require `ts-node` for Jest config parsing, which may not be installed. Core lint/typecheck/build verification: `npm run verify`.
 - The Docker daemon must be started manually in Cloud Agent VMs: `sudo dockerd &>/tmp/dockerd.log &` — wait a few seconds, then `sudo chmod 666 /var/run/docker.sock` for non-root access.
 - Environment variables: copy `.env.example` → `.env` at root and `libs/database/.env.example` → `libs/database/.env`. Both need `DATABASE_URL=postgresql://mp_pro:mp_pro@localhost:5432/mp_pro`.
+- Docker in Cloud VMs also needs fuse-overlayfs storage driver and iptables-legacy. Config: `{"storage-driver": "fuse-overlayfs"}` in `/etc/docker/daemon.json` + `update-alternatives --set iptables /usr/sbin/iptables-legacy`.
+- Prisma 7 seed: run `npx tsx libs/database/prisma/seed.ts` directly (not `prisma db seed`, which requires config in `prisma.config.ts`). Seed creates admin user `admin@mppro.local` / `Admin123!`.
+- After migrations, always run `npx nx run database:prisma-generate` before starting the API to ensure the Prisma client is in sync.
