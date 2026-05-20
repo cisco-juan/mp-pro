@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Pencil, Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,13 +40,17 @@ import {
   emptyServicioFormValues,
   useServiciosStore,
 } from '@/lib/servicios/servicios-store';
+import type { Servicio } from '@/lib/api/servicios-api';
 
 export function ServiciosTable() {
-  const { servicios, categorias, createServicio, toggleServicioActivo } = useServiciosStore();
+  const { servicios, categorias, createServicio, updateServicio, toggleServicioActivo } = useServiciosStore();
   const [search, setSearch] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ServicioFormValues>(emptyServicioFormValues);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<ServicioFormValues>(emptyServicioFormValues);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const allCategorias = useMemo(() => {
     const merged = new Set([...defaultCategorias, ...categorias]);
@@ -83,6 +87,30 @@ export function ServiciosTable() {
     toast.success('Servicio registrado', { description: servicio.nombre });
     setForm(emptyServicioFormValues);
     setOpen(false);
+  }
+
+  function startEdit(servicio: Servicio) {
+    setEditingId(servicio.id);
+    setEditForm({
+      nombre: servicio.nombre,
+      descripcion: servicio.descripcion,
+      precio: String(servicio.precio),
+      duracionMin: String(servicio.duracionMin),
+      categoria: servicio.categoria,
+    });
+    setEditOpen(true);
+  }
+
+  async function handleUpdate() {
+    if (!editingId) return;
+    const ok = await updateServicio(editingId, editForm);
+    if (!ok) {
+      toast.error('No se pudo actualizar el servicio');
+      return;
+    }
+    toast.success('Servicio actualizado');
+    setEditOpen(false);
+    setEditingId(null);
   }
 
   return (
@@ -234,18 +262,28 @@ export function ServiciosTable() {
                     {servicio.precio.toLocaleString('es-ES')} €
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        toggleServicioActivo(servicio.id);
-                        toast.success(
-                          servicio.activo ? 'Servicio desactivado' : 'Servicio activado'
-                        );
-                      }}
-                    >
-                      {servicio.activo ? 'Desactivar' : 'Activar'}
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(servicio)}
+                      >
+                        <Pencil className="mr-1 size-3" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          toggleServicioActivo(servicio.id);
+                          toast.success(
+                            servicio.activo ? 'Servicio desactivado' : 'Servicio activado'
+                          );
+                        }}
+                      >
+                        {servicio.activo ? 'Desactivar' : 'Activar'}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -253,6 +291,77 @@ export function ServiciosTable() {
           </TableBody>
         </Table>
       </DataTableShell>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar servicio</DialogTitle>
+            <DialogDescription>Modificar los datos del servicio.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-nombre">Nombre</Label>
+              <Input
+                id="edit-nombre"
+                placeholder="Nombre del servicio"
+                value={editForm.nombre}
+                onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-descripcion">Descripción</Label>
+              <Input
+                id="edit-descripcion"
+                value={editForm.descripcion}
+                onChange={(e) => setEditForm((f) => ({ ...f, descripcion: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-categoria">Categoría</Label>
+                <Input
+                  id="edit-categoria"
+                  list="edit-categorias-servicio"
+                  value={editForm.categoria}
+                  onChange={(e) => setEditForm((f) => ({ ...f, categoria: e.target.value }))}
+                />
+                <datalist id="edit-categorias-servicio">
+                  {allCategorias.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-duracion">Duración (min)</Label>
+                <Input
+                  id="edit-duracion"
+                  type="number"
+                  min={15}
+                  value={editForm.duracionMin}
+                  onChange={(e) => setEditForm((f) => ({ ...f, duracionMin: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-precio">Precio (€)</Label>
+              <Input
+                id="edit-precio"
+                type="number"
+                step="0.01"
+                min={0}
+                value={editForm.precio}
+                onChange={(e) => setEditForm((f) => ({ ...f, precio: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdate}>Guardar cambios</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

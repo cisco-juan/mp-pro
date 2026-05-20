@@ -24,6 +24,21 @@ export async function createUsuarioApi(
   });
 }
 
+export async function updateUsuarioApi(
+  id: string,
+  values: Partial<UsuarioFormValues>,
+): Promise<Usuario> {
+  return apiRequest<Usuario>(`/users/${id}`, {
+    method: 'PATCH',
+    body: {
+      nombre: values.nombre || undefined,
+      email: values.email || undefined,
+      telefono: values.telefono || undefined,
+      rolId: values.rolId || undefined,
+    },
+  });
+}
+
 export async function toggleUsuarioActivoApi(id: string): Promise<Usuario> {
   return apiRequest<Usuario>(`/users/${id}/toggle-active`, {
     method: 'PATCH',

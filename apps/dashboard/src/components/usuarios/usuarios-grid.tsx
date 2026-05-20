@@ -1,4 +1,6 @@
+import { Pencil } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { ActivoBadge } from '@/components/shared/status-badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Usuario } from '@/lib/usuarios/usuarios-store';
@@ -13,7 +15,12 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export function UsuariosGrid({ data }: { data: Usuario[] }) {
+interface UsuariosGridProps {
+  data: Usuario[];
+  onEdit?: (usuario: Usuario) => void;
+}
+
+export function UsuariosGrid({ data, onEdit }: UsuariosGridProps) {
   const { getRolNombre } = useUsuariosStore();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -34,7 +41,20 @@ export function UsuariosGrid({ data }: { data: Usuario[] }) {
                   <p className="font-semibold">{usuario.nombre}</p>
                   <p className="text-sm text-muted-foreground">{getRolNombre(usuario.rolId)}</p>
                 </div>
-                <ActivoBadge activo={usuario.activo} />
+                <div className="flex items-center gap-1">
+                  {onEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => onEdit(usuario)}
+                      aria-label="Editar usuario"
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                  )}
+                  <ActivoBadge activo={usuario.activo} />
+                </div>
               </div>
               <p className="mt-2 truncate text-sm">{usuario.email}</p>
               <p className="text-sm text-muted-foreground">{usuario.telefono}</p>

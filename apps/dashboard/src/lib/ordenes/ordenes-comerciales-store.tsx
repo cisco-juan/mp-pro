@@ -11,10 +11,12 @@ import {
 } from 'react';
 import {
   convertCotizacionToFacturaApi,
+  createCotizacionApi,
   createCotizacionFromWorkOrderApi,
   fetchOrdenesComerciales,
   updateCotizacionEstadoApi,
   updateFacturaEstadoApi,
+  type CreateCotizacionInput,
   type OrdenComercial,
 } from '@/lib/api/ordenes-api';
 import { fetchPagos, registerPagoApi, type Pago } from '@/lib/api/pagos-api';
@@ -28,6 +30,7 @@ export type OrdenesComercialesContextValue = {
   error: string | null;
   reload: () => Promise<void>;
   facturasPendientesCount: number;
+  createCotizacion: (input: CreateCotizacionInput) => Promise<OrdenComercial | null>;
   createCotizacionFromOrdenTrabajo: (ordenTrabajoId: string) => Promise<OrdenComercial>;
   getOrdenComercial: (id: string) => OrdenComercial | undefined;
   getOrdenComercialByOrdenTrabajoId: (ordenTrabajoId: string) => OrdenComercial | undefined;
@@ -127,6 +130,19 @@ export function OrdenesComercialesProvider({ children }: { children: ReactNode }
     [ordenesComerciales, pagos],
   );
 
+  const createCotizacion = useCallback(
+    async (input: CreateCotizacionInput): Promise<OrdenComercial | null> => {
+      try {
+        const cotizacion = await createCotizacionApi(input);
+        setOrdenesComerciales((prev) => [...prev, cotizacion]);
+        return cotizacion;
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
   const createCotizacionFromOrdenTrabajo = useCallback(
     async (ordenTrabajoId: string): Promise<OrdenComercial> => {
       const cotizacion = await createCotizacionFromWorkOrderApi(ordenTrabajoId);
@@ -217,6 +233,7 @@ export function OrdenesComercialesProvider({ children }: { children: ReactNode }
       error,
       reload,
       facturasPendientesCount,
+      createCotizacion,
       createCotizacionFromOrdenTrabajo,
       getOrdenComercial,
       getOrdenComercialByOrdenTrabajoId,
@@ -237,6 +254,7 @@ export function OrdenesComercialesProvider({ children }: { children: ReactNode }
       error,
       reload,
       facturasPendientesCount,
+      createCotizacion,
       createCotizacionFromOrdenTrabajo,
       getOrdenComercial,
       getOrdenComercialByOrdenTrabajoId,

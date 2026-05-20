@@ -3,6 +3,7 @@ import type {
   CotizacionEstado,
   FacturaEstado,
   LineaOrden,
+  LineaOrdenTipo,
   OrdenComercialEstado,
   OrdenComercialTipo,
 } from '@/lib/mock-data';
@@ -70,5 +71,37 @@ export async function convertCotizacionToFacturaApi(
 ): Promise<OrdenComercial> {
   return apiRequest<OrdenComercial>(`/commercial-orders/${cotizacionId}/convert-to-invoice`, {
     method: 'POST',
+  });
+}
+
+export interface CreateCotizacionLineInput {
+  tipo: LineaOrdenTipo;
+  referenciaId: string;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+}
+
+export interface CreateCotizacionInput {
+  clienteId: string;
+  vehiculoId?: string;
+  fecha: string;
+  validezHasta?: string;
+  lineas: CreateCotizacionLineInput[];
+}
+
+export async function createCotizacionApi(
+  input: CreateCotizacionInput,
+): Promise<OrdenComercial> {
+  return apiRequest<OrdenComercial>('/commercial-orders', {
+    method: 'POST',
+    body: {
+      tipo: 'cotizacion',
+      clienteId: input.clienteId,
+      vehiculoId: input.vehiculoId || undefined,
+      fecha: input.fecha,
+      validezHasta: input.validezHasta || undefined,
+      lineas: input.lineas,
+    },
   });
 }

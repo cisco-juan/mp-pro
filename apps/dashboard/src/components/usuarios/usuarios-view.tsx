@@ -30,8 +30,10 @@ import {
   emptyUsuarioFormValues,
   useUsuariosStore,
   type RolFormValues,
+  type Usuario,
   type UsuarioFormValues,
 } from '@/lib/usuarios/usuarios-store';
+import { UsuarioEditDialog } from './usuario-edit-dialog';
 import { UsuariosGrid } from './usuarios-grid';
 import { UsuariosTable } from './usuarios-table';
 import { RolesTable } from './roles-table';
@@ -45,6 +47,7 @@ export function UsuariosView() {
   const [openRol, setOpenRol] = useState(false);
   const [usuarioForm, setUsuarioForm] = useState<UsuarioFormValues>(emptyUsuarioFormValues);
   const [rolForm, setRolForm] = useState<RolFormValues>(emptyRolFormValues);
+  const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -224,7 +227,7 @@ export function UsuariosView() {
             <p className="py-12 text-center text-muted-foreground">No se encontraron usuarios</p>
           ) : (
             <>
-              <UsuariosGrid data={paginatedItems} />
+              <UsuariosGrid data={paginatedItems} onEdit={setEditingUsuario} />
               <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
                 <TablePagination
                   page={page}
@@ -236,8 +239,14 @@ export function UsuariosView() {
             </>
           )
         ) : (
-          <UsuariosTable data={filtered} key={resetKey} />
+          <UsuariosTable data={filtered} key={resetKey} onEdit={setEditingUsuario} />
         )}
+
+        <UsuarioEditDialog
+          usuario={editingUsuario}
+          open={editingUsuario !== null}
+          onOpenChange={(open) => !open && setEditingUsuario(null)}
+        />
       </TabsContent>
 
       <TabsContent value="roles" className="flex flex-col gap-4">

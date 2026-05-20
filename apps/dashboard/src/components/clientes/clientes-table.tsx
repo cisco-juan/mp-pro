@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Eye, Pencil, Plus, Search, UserCheck, UserX } from 'lucide-react';
+import { Download, Eye, Pencil, Plus, Search, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,7 @@ import { DataTableShell } from '@/components/shared/data-table-shell';
 import { TablePagination } from '@/components/shared/table-pagination';
 import { ClienteForm } from '@/components/clientes/cliente-form';
 import { usePagination } from '@/hooks/use-pagination';
+import { exportClientesCsv } from '@/lib/api/clientes-api';
 import { useClientesStore } from '@/lib/clientes/clientes-store';
 import type { Cliente, ClienteFormValues } from '@/lib/mock-data';
 import { formatDisplayDate } from '@org/utils-shared';
@@ -195,6 +196,16 @@ export function ClientesTable() {
               </SelectContent>
             </Select>
           </div>
+          <Button
+            variant="outline"
+            className="min-h-11 shrink-0"
+            onClick={() => {
+              exportClientesCsv().catch(() => toast.error('No se pudo exportar'));
+            }}
+          >
+            <Download className="size-4" />
+            Exportar CSV
+          </Button>
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
             <DialogTrigger asChild>
               <Button className="min-h-11 shrink-0">
