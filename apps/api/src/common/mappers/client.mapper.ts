@@ -94,6 +94,7 @@ export type VehiculoResponse = {
   id: string;
   clienteId: string;
   matricula: string;
+  vin?: string;
   marca: string;
   modelo: string;
   anio: number;
@@ -105,17 +106,19 @@ export type VehiculoResponse = {
 };
 
 export function mapVehicleToResponse(vehicle: Vehicle): VehiculoResponse {
+  const v = vehicle as Vehicle & { vin?: string | null };
   return {
-    id: vehicle.id,
-    clienteId: vehicle.clientId,
-    matricula: vehicle.matricula,
-    marca: vehicle.marca,
-    modelo: vehicle.modelo,
-    anio: vehicle.anio,
-    color: vehicle.color,
-    kilometraje: vehicle.kilometraje,
-    proximoMantenimiento: formatDateOnly(vehicle.proximoMantenimiento),
-    urgencia: computeUrgencia(vehicle.proximoMantenimiento),
-    estado: vehicle.estado,
+    id: v.id,
+    clienteId: v.clientId,
+    matricula: v.matricula,
+    vin: v.vin ?? undefined,
+    marca: v.marca,
+    modelo: v.modelo,
+    anio: v.anio,
+    color: v.color,
+    kilometraje: v.kilometraje,
+    proximoMantenimiento: formatDateOnly(v.proximoMantenimiento),
+    urgencia: computeUrgencia(v.proximoMantenimiento),
+    estado: v.estado,
   };
 }

@@ -1,4 +1,5 @@
-import { apiRequest } from './client';
+import { apiRequest, getStoredAccessToken } from './client';
+import { API_BASE_URL } from './config';
 import type { Cliente, Vehiculo } from './types';
 import type { ClienteFormValues, VehiculoFormValues } from '@/lib/mock-data';
 
@@ -122,4 +123,17 @@ export async function toggleVehiculoActivoApi(id: string): Promise<Vehiculo> {
   return apiRequest<Vehiculo>(`/vehicles/${id}/toggle-active`, {
     method: 'PATCH',
   });
+}
+
+export async function exportClientesCsv(): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/clients/export/csv`, {
+    headers: { Authorization: `Bearer ${getStoredAccessToken() ?? ''}` },
+  });
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'clientes.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }

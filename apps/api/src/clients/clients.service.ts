@@ -138,6 +138,31 @@ export class ClientsService {
     return mapClientToResponse(client);
   }
 
+  async exportCsv(): Promise<string> {
+    const clients = await this.prisma.client.client.findMany({
+      orderBy: { nombre: 'asc' },
+    });
+
+    const header = 'nombre,email,telefono,empresa,estado';
+    const rows = clients.map((c) => {
+      const nombre = this.escapeCsvField(c.nombre);
+      const email = this.escapeCsvField(c.email);
+      const telefono = this.escapeCsvField(c.telefono);
+      const empresa = this.escapeCsvField(c.empresa ?? '');
+      const estado = c.estado;
+      return `${nombre},${email},${telefono},${empresa},${estado}`;
+    });
+
+    return [header, ...rows].join('\n');
+  }
+
+  private escapeCsvField(value: string): string {
+    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
+
   private buildClientData(
     dto: CreateClientDto | UpdateClientDto,
     email?: string,

@@ -59,4 +59,10 @@ export class InventoryController {
   toggleActive(@Param('id') id: string) {
     return this.inventoryService.toggleActive(id);
   }
+
+  @Get(':id/movements')
+  @Permissions('inventario:read', 'inventario:write')
+  findMovements(@Param('id') id: string) {
+    return this.inventoryService.findMovements(id);
+  }
 }

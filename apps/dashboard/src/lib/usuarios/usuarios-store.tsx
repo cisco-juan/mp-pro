@@ -15,6 +15,7 @@ import {
   fetchRoles,
   fetchUsuarios,
   toggleUsuarioActivoApi,
+  updateUsuarioApi,
 } from '@/lib/api/usuarios-api';
 import type { Rol, RolFormValues, Usuario, UsuarioFormValues } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/auth-store';
@@ -46,6 +47,7 @@ export type UsuariosContextValue = {
   getUsuariosByRolId: (rolId: string) => Usuario[];
   getUsuariosMecanicos: () => Usuario[];
   createUsuario: (values: UsuarioFormValues) => Promise<Usuario | null>;
+  updateUsuario: (id: string, values: Partial<UsuarioFormValues>) => Promise<boolean>;
   toggleUsuarioActivo: (id: string) => Promise<boolean>;
   createRol: (values: RolFormValues) => Promise<Rol | null>;
 };
@@ -125,6 +127,19 @@ export function UsuariosProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const updateUsuario = useCallback(
+    async (id: string, values: Partial<UsuarioFormValues>): Promise<boolean> => {
+      try {
+        const updated = await updateUsuarioApi(id, values);
+        setUsuarios((prev) => prev.map((u) => (u.id === id ? updated : u)));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   const toggleUsuarioActivo = useCallback(async (id: string): Promise<boolean> => {
     try {
       const updated = await toggleUsuarioActivoApi(id);
@@ -163,6 +178,7 @@ export function UsuariosProvider({ children }: { children: ReactNode }) {
       getUsuariosByRolId,
       getUsuariosMecanicos,
       createUsuario,
+      updateUsuario,
       toggleUsuarioActivo,
       createRol,
     }),
@@ -178,6 +194,7 @@ export function UsuariosProvider({ children }: { children: ReactNode }) {
       getUsuariosByRolId,
       getUsuariosMecanicos,
       createUsuario,
+      updateUsuario,
       toggleUsuarioActivo,
       createRol,
     ],

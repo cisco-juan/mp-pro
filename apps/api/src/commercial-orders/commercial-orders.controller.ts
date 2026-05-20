@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { Permissions } from '../common/decorators/permissions.decorator';
+import { PaymentsService } from '../payments/payments.service';
 import { CommercialOrdersService } from './commercial-orders.service';
 import { CreateCommercialOrderDto } from './dto/create-commercial-order.dto';
 import { CreateFromWorkOrderDto } from './dto/create-from-work-order.dto';
@@ -7,7 +8,10 @@ import { UpdateCommercialOrderEstadoDto } from './dto/update-commercial-order-es
 
 @Controller('commercial-orders')
 export class CommercialOrdersController {
-  constructor(private readonly commercialOrdersService: CommercialOrdersService) {}
+  constructor(
+    private readonly commercialOrdersService: CommercialOrdersService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Get()
   @Permissions('ordenes:read', 'ordenes:write', 'pagos:read', 'pagos:write')
@@ -23,6 +27,12 @@ export class CommercialOrdersController {
   @Permissions('ordenes:read', 'ordenes:write', 'pagos:read', 'pagos:write')
   findOne(@Param('id') id: string) {
     return this.commercialOrdersService.findOne(id);
+  }
+
+  @Get(':id/balance')
+  @Permissions('pagos:read', 'pagos:write')
+  getBalance(@Param('id') id: string) {
+    return this.paymentsService.getBalance(id);
   }
 
   @Post()

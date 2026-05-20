@@ -9,6 +9,10 @@ export class CreateVehicleDto {
   @IsNotEmpty()
   matricula!: string;
 
+  @IsOptional()
+  @IsString()
+  vin?: string;
+
   @IsString()
   @IsNotEmpty()
   marca!: string;

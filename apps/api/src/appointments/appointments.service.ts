@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { mapAppointmentToResponse } from '../common/mappers/appointment.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -32,6 +37,7 @@ export class AppointmentsService {
   async create(dto: CreateAppointmentDto) {
     await this.validateRelations(dto.clienteId, dto.vehiculoId, dto.servicioId);
     await this.ensureVehicleBelongsToClient(dto.vehiculoId, dto.clienteId);
+    await this.checkConflict(dto.vehiculoId, dto.fecha, dto.hora, dto.duracionMin);
 
     const appointment = await this.prisma.client.appointment.create({
       data: {
@@ -56,9 +62,13 @@ export class AppointmentsService {
     const clientId = dto.clienteId ?? current.clientId;
     const vehicleId = dto.vehiculoId ?? current.vehicleId;
     const serviceId = dto.servicioId ?? current.serviceId;
+    const fecha = dto.fecha ?? current.fecha.toISOString().slice(0, 10);
+    const hora = dto.hora ?? current.hora;
+    const duracionMin = dto.duracionMin ?? current.duracionMin;
 
     await this.validateRelations(clientId, vehicleId, serviceId);
     await this.ensureVehicleBelongsToClient(vehicleId, clientId);
+    await this.checkConflict(vehicleId, fecha, hora, duracionMin, id);
 
     const appointment = await this.prisma.client.appointment.update({
       where: { id },
@@ -112,5 +122,47 @@ export class AppointmentsService {
     if (vehicle?.clientId !== clientId) {
       throw new BadRequestException('El vehículo no pertenece al cliente indicado');
     }
+  }
+
+  private async checkConflict(
+    vehicleId: string,
+    fecha: string,
+    hora: string,
+    duracionMin: number,
+    excludeId?: string,
+  ) {
+    const existing = await this.prisma.client.appointment.findMany({
+      where: {
+        vehicleId,
+        fecha: this.parseDate(fecha),
+        estado: { notIn: ['cancelada', 'completada'] },
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
+    });
+
+    const newStart = this.timeToMinutes(hora);
+    const newEnd = newStart + duracionMin;
+
+    for (const appt of existing) {
+      const apptStart = this.timeToMinutes(appt.hora);
+      const apptEnd = apptStart + appt.duracionMin;
+
+      if (newStart < apptEnd && newEnd > apptStart) {
+        throw new ConflictException(
+          `Conflicto de horario: el vehículo ya tiene una cita de ${appt.hora} a ${this.minutesToTime(apptEnd)} en esta fecha`,
+        );
+      }
+    }
+  }
+
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private minutesToTime(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 }
