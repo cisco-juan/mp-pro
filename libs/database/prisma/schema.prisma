@@ -108,6 +108,7 @@ model Vehicle {
   clientId             String         @map("client_id")
   client               Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
   matricula            String         @unique
+  vin                  String?
   marca                String
   modelo               String
   anio                 Int
@@ -294,11 +295,28 @@ model InventoryPart {
   ubicacion      String?
   estado         InventoryPartEstado @default(activo)
   workOrderParts WorkOrderPart[]
+  movements      StockMovement[]
   createdAt      DateTime            @default(now()) @map("created_at")
   updatedAt      DateTime            @updatedAt @map("updated_at")
 
   @@index([categoria])
   @@map("inventory_parts")
+}
+
+model StockMovement {
+  id              String        @id @default(cuid())
+  inventoryPartId String        @map("inventory_part_id")
+  inventoryPart   InventoryPart @relation(fields: [inventoryPartId], references: [id])
+  tipo            String
+  cantidad        Int
+  stockAnterior   Int           @map("stock_anterior")
+  stockNuevo      Int           @map("stock_nuevo")
+  nota            String?
+  userId          String?       @map("user_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@index([inventoryPartId])
+  @@map("stock_movements")
 }
 
 enum WorkOrderEstado {

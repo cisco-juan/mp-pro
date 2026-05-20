@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { mapUserToResponse } from '../common/mappers/user.mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -92,6 +93,22 @@ export class UsersService {
     const user = await this.prisma.client.user.update({
       where: { id },
       data,
+      include: { role: true },
+    });
+
+    return mapUserToResponse(user);
+  }
+
+  async changePassword(id: string, dto: ChangePasswordDto) {
+    await this.findOne(id);
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    const user = await this.prisma.client.user.update({
+      where: { id },
+      data: {
+        passwordHash,
+        passwordChangedAt: new Date(),
+      },
       include: { role: true },
     });
 

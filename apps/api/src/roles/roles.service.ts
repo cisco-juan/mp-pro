@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { mapRoleToResponse } from '../common/mappers/user.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 @Injectable()
 export class RolesService {
@@ -29,6 +30,21 @@ export class RolesService {
         descripcion: dto.descripcion?.trim() ?? '',
         permisos: dto.permisos,
       },
+    });
+    return mapRoleToResponse(role);
+  }
+
+  async update(id: string, dto: UpdateRoleDto) {
+    await this.findOne(id);
+
+    const data: Record<string, unknown> = {};
+    if (dto.nombre !== undefined) data.nombre = dto.nombre.trim();
+    if (dto.descripcion !== undefined) data.descripcion = dto.descripcion.trim();
+    if (dto.permisos !== undefined) data.permisos = dto.permisos;
+
+    const role = await this.prisma.client.role.update({
+      where: { id },
+      data,
     });
     return mapRoleToResponse(role);
   }

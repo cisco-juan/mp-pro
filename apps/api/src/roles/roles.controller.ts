@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { RolesService } from './roles.service';
 
 @Controller('roles')
@@ -22,5 +23,11 @@ export class RolesController {
   @Permissions('usuarios:write')
   create(@Body() dto: CreateRoleDto) {
     return this.rolesService.create(dto);
+  }
+
+  @Patch(':id')
+  @Permissions('usuarios:write')
+  update(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
+    return this.rolesService.update(id, dto);
   }
 }

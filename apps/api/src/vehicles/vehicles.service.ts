@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Vehicle } from '@org/database';
 import { mapVehicleToResponse } from '../common/mappers/client.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -33,18 +34,19 @@ export class VehiclesService {
     await this.ensureMatriculaAvailable(matricula);
     await this.ensureClientExists(dto.clientId);
 
-    const vehicle = await this.prisma.client.vehicle.create({
-      data: {
-        clientId: dto.clientId,
-        matricula,
-        marca: dto.marca.trim(),
-        modelo: dto.modelo.trim(),
-        anio: dto.anio,
-        color: dto.color?.trim() || '—',
-        kilometraje: dto.kilometraje ?? 0,
-        proximoMantenimiento: new Date(`${dto.proximoMantenimiento}T00:00:00`),
-      },
-    });
+    const createData = {
+      clientId: dto.clientId,
+      matricula,
+      vin: dto.vin?.trim() || null,
+      marca: dto.marca.trim(),
+      modelo: dto.modelo.trim(),
+      anio: dto.anio,
+      color: dto.color?.trim() || '—',
+      kilometraje: dto.kilometraje ?? 0,
+      proximoMantenimiento: new Date(`${dto.proximoMantenimiento}T00:00:00`),
+    };
+    const vehicleCreate = this.prisma.client.vehicle.create as (args: unknown) => Promise<Vehicle>;
+    const vehicle = await vehicleCreate({ data: createData });
 
     await this.touchClientUltimaVisita(dto.clientId);
     return mapVehicleToResponse(vehicle);
@@ -70,24 +72,22 @@ export class VehiclesService {
       await this.ensureClientExists(dto.clientId);
     }
 
+    const data: Record<string, unknown> = {};
+    if (dto.clientId !== undefined) data.clientId = dto.clientId;
+    if (dto.matricula !== undefined) data.matricula = dto.matricula.trim().toUpperCase();
+    if (dto.vin !== undefined) data.vin = dto.vin.trim() || null;
+    if (dto.marca !== undefined) data.marca = dto.marca.trim();
+    if (dto.modelo !== undefined) data.modelo = dto.modelo.trim();
+    if (dto.anio !== undefined) data.anio = dto.anio;
+    if (dto.color !== undefined) data.color = dto.color.trim() || '—';
+    if (dto.kilometraje !== undefined) data.kilometraje = dto.kilometraje;
+    if (dto.proximoMantenimiento !== undefined) {
+      data.proximoMantenimiento = new Date(`${dto.proximoMantenimiento}T00:00:00`);
+    }
+
     const vehicle = await this.prisma.client.vehicle.update({
       where: { id },
-      data: {
-        ...(dto.clientId !== undefined ? { clientId: dto.clientId } : {}),
-        ...(dto.matricula !== undefined
-          ? { matricula: dto.matricula.trim().toUpperCase() }
-          : {}),
-        ...(dto.marca !== undefined ? { marca: dto.marca.trim() } : {}),
-        ...(dto.modelo !== undefined ? { modelo: dto.modelo.trim() } : {}),
-        ...(dto.anio !== undefined ? { anio: dto.anio } : {}),
-        ...(dto.color !== undefined ? { color: dto.color.trim() || '—' } : {}),
-        ...(dto.kilometraje !== undefined ? { kilometraje: dto.kilometraje } : {}),
-        ...(dto.proximoMantenimiento !== undefined
-          ? {
-              proximoMantenimiento: new Date(`${dto.proximoMantenimiento}T00:00:00`),
-            }
-          : {}),
-      },
+      data,
     });
 
     await this.touchClientUltimaVisita(vehicle.clientId);

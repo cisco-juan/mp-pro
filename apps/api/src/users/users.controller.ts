@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { Permissions } from '../common/decorators/permissions.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
@@ -37,6 +38,12 @@ export class UsersController {
   @Permissions('usuarios:write')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
+  }
+
+  @Patch(':id/change-password')
+  @Permissions('usuarios:write')
+  changePassword(@Param('id') id: string, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(id, dto);
   }
 
   @Patch(':id/toggle-active')

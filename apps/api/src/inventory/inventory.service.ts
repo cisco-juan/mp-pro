@@ -93,9 +93,20 @@ export class InventoryService {
       throw new BadRequestException('El stock no puede ser negativo');
     }
 
+    const tipo = dto.delta > 0 ? 'entrada' : dto.delta < 0 ? 'salida' : 'ajuste';
+
     const part = await this.prisma.client.inventoryPart.update({
       where: { id },
       data: { stock: nextStock },
+    });
+
+    await this.logMovement({
+      inventoryPartId: id,
+      tipo,
+      cantidad: dto.delta,
+      stockAnterior: current.stock,
+      stockNuevo: nextStock,
+      nota: dto.nota ?? null,
     });
 
     return mapInventoryPartToResponse(part);
@@ -111,12 +122,52 @@ export class InventoryService {
       throw new BadRequestException('Stock insuficiente');
     }
 
+    const nextStock = current.stock - dto.cantidad;
+
     const part = await this.prisma.client.inventoryPart.update({
       where: { id },
-      data: { stock: current.stock - dto.cantidad },
+      data: { stock: nextStock },
+    });
+
+    await this.logMovement({
+      inventoryPartId: id,
+      tipo: 'reserva',
+      cantidad: -dto.cantidad,
+      stockAnterior: current.stock,
+      stockNuevo: nextStock,
+      nota: dto.nota ?? null,
     });
 
     return mapInventoryPartToResponse(part);
+  }
+
+  async findMovements(partId: string) {
+    const part = await this.prisma.client.inventoryPart.findUnique({ where: { id: partId } });
+    if (!part) {
+      throw new NotFoundException(`Pieza #${partId} no encontrada`);
+    }
+
+    const model = this.getStockMovementModel();
+    if (!model) {
+      return [];
+    }
+
+    const movements = await model.findMany({
+      where: { inventoryPartId: partId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return movements.map((m) => ({
+      id: m['id'] as string,
+      inventoryPartId: m['inventoryPartId'] as string,
+      tipo: m['tipo'] as string,
+      cantidad: m['cantidad'] as number,
+      stockAnterior: m['stockAnterior'] as number,
+      stockNuevo: m['stockNuevo'] as number,
+      nota: (m['nota'] as string | null) ?? undefined,
+      userId: (m['userId'] as string | null) ?? undefined,
+      createdAt: (m['createdAt'] as Date).toISOString(),
+    }));
   }
 
   async toggleActive(id: string) {
@@ -131,6 +182,32 @@ export class InventoryService {
     });
 
     return mapInventoryPartToResponse(part);
+  }
+
+  private async logMovement(data: {
+    inventoryPartId: string;
+    tipo: string;
+    cantidad: number;
+    stockAnterior: number;
+    stockNuevo: number;
+    nota: string | null;
+  }): Promise<void> {
+    const model = this.getStockMovementModel();
+    if (model) {
+      await model.create({ data });
+    }
+  }
+
+  private getStockMovementModel() {
+    const client = this.prisma.client as unknown as Record<string, unknown>;
+    const model = client['stockMovement'];
+    if (model && typeof model === 'object' && 'create' in (model as object)) {
+      return model as {
+        create: (args: { data: unknown }) => Promise<unknown>;
+        findMany: (args: unknown) => Promise<Array<Record<string, unknown>>>;
+      };
+    }
+    return null;
   }
 
   private async ensureCodigoAvailable(codigo: string): Promise<void> {

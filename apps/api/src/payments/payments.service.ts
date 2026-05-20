@@ -48,7 +48,7 @@ export class PaymentsService {
       ? new Date(`${dto.fecha}T00:00:00.000Z`)
       : new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
 
-    const payment = await this.prisma.client.$transaction(async (tx) => {
+    const result = await this.prisma.client.$transaction(async (tx) => {
       const created = await tx.payment.create({
         data: {
           commercialOrderId: dto.ordenComercialId,
@@ -71,9 +71,34 @@ export class PaymentsService {
         });
       }
 
-      return created;
+      return { payment: created, pagado };
     });
 
-    return mapPaymentToResponse(payment);
+    const total = Number(order.total);
+    const pendiente = Math.max(0, Math.round((total - result.pagado) * 100) / 100);
+
+    return {
+      ...mapPaymentToResponse(result.payment),
+      saldoPendiente: pendiente,
+    };
+  }
+
+  async getBalance(commercialOrderId: string) {
+    const order = await this.prisma.client.commercialOrder.findUnique({
+      where: { id: commercialOrderId },
+    });
+    if (!order) {
+      throw new NotFoundException(`Orden comercial #${commercialOrderId} no encontrada`);
+    }
+
+    const pagos = await this.prisma.client.payment.findMany({
+      where: { commercialOrderId, monto: { gt: 0 } },
+    });
+
+    const total = Number(order.total);
+    const pagado = pagos.reduce((sum, p) => sum + Number(p.monto), 0);
+    const pendiente = Math.max(0, Math.round((total - pagado) * 100) / 100);
+
+    return { total, pagado, pendiente };
   }
 }

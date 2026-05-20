@@ -11,6 +11,10 @@ export class UpdateVehicleDto {
 
   @IsOptional()
   @IsString()
+  vin?: string;
+
+  @IsOptional()
+  @IsString()
   marca?: string;
 
   @IsOptional()
